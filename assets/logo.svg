@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="27.505" height="27.92" viewBox="0 0 27.505 27.92">
+  <defs>
+    <filter id="Path_1" x="0.704" y="0" width="26.144" height="25.473" filterUnits="userSpaceOnUse">
+      <feOffset dy="3" input="SourceAlpha"/>
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feFlood flood-opacity="0.161"/>
+      <feComposite operator="in" in2="blur"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+    <filter id="Path_2" x="0" y="7.286" width="27.505" height="20.634" filterUnits="userSpaceOnUse">
+      <feOffset dy="3" input="SourceAlpha"/>
+      <feGaussianBlur stdDeviation="3" result="blur-2"/>
+      <feFlood flood-opacity="0.161"/>
+      <feComposite operator="in" in2="blur-2"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+  </defs>
+  <g id="Group_853" data-name="Group 853" transform="translate(1287.949 -1338)">
+    <rect id="Rectangle_44" data-name="Rectangle 44" width="20" height="20" rx="2" transform="translate(-1284 1339)" fill="#f12246"/>
+    <g id="Group_852" data-name="Group 852" transform="translate(-1278.949 1344)">
+      <g transform="matrix(1, 0, 0, 1, -9, -6)" filter="url(#Path_1)">
+        <path id="Path_1-2" data-name="Path 1" d="M65.614,52.286a7.2,7.2,0,0,1-.805-.373c-.332-.138-.68-.234-1.017-.359l-2.156-4.873c-.01-.079-.167-.11-.2-.043l-2.173,4.9a5.055,5.055,0,0,1-.791.284c-.342.138-.674.3-1,.463l3.293-7.421a8.681,8.681,0,0,1,1.4-.04c.057.008.109.007.145.062Z" transform="translate(-47.77 -38.82)" fill="#eefdfc"/>
+      </g>
+      <g transform="matrix(1, 0, 0, 1, -9, -6)" filter="url(#Path_2)">
+        <path id="Path_2-2" data-name="Path 2" d="M56.787,151.958l-.064.157-.861.837a6.247,6.247,0,0,1-.862-.509,6.237,6.237,0,0,0-5.759-.082c-.169.085-.892.583-.947.588a.151.151,0,0,1-.124-.042l-.887-.934a8.558,8.558,0,0,1,2.275-1.243,7.7,7.7,0,0,1,7.23,1.226" transform="translate(-38.28 -137.03)" fill="#eefdfc"/>
+      </g>
+    </g>
+  </g>
+</svg>
