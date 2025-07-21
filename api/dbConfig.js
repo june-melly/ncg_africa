@@ -1,5 +1,13 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-dotenv.config({ path: './api/.env' }); // Load environment variables from .env
+
+// Get current directory for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load environment variables with absolute path
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const dbConfig = {
   server: process.env.SERVER,
