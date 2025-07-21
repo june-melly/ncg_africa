@@ -109,7 +109,7 @@ export class WidgetRenderer {
 
 async loadStoredQuery() {
   try {
-    const response = await fetch(`http://localhost:5000/loadStoredQuery`, {
+    const response = await fetch(`https://localhost:5000/loadStoredQuery`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -624,115 +624,6 @@ async applyWidgetChanges(bottomSheet, widget) {
         window.navigationManager.showNotification('Widget updated successfully', 'success');
     }
 } 
-async applyWidgetChanges(bottomSheet, widget) {
-    const titleInput = bottomSheet.querySelector('.widget-title-input');
-    const apiInput = bottomSheet.querySelector('.api-endpoint-input');
-    const intervalInput = bottomSheet.querySelector('.refresh-interval-input');
-    const fontSizeInput = bottomSheet.querySelector('.font-size-input');
-    const textContentInput = bottomSheet.querySelector('.text-content-input');
-
-    // Update widget locally
-    if (widget.type === 'text-header') {
-        if (textContentInput) {
-            widget.content = textContentInput.value;
-            widget.title = textContentInput.value || 'Text Header';
-        }
-
-        if (fontSizeInput) {
-            widget.fontSize = parseInt(fontSizeInput.value);
-        }
-    } else {
-        if (titleInput) {
-            widget.title = titleInput.value;
-        }
-
-        if (apiInput) {
-            widget.apiEndpoint = apiInput.value;
-        }
-
-        if (intervalInput) {
-            widget.refreshInterval = parseInt(intervalInput.value) * 1000;
-        }
-
-        // Fetch data if API endpoint is provided
-        if (widget.apiEndpoint && widget.apiEndpoint.trim()) {
-            try {
-            await this.fetchWidgetData(widget);
-            } catch (error) {
-                console.error('Error fetching widget data:', error);
-            }
-        }
-    }
-       // Update the widget in the dashboard app's widgets array
-        const widgetIndex = this.app.widgets.findIndex(w => w.id === widget.id);
-        if (widgetIndex >= 0) {
-            this.app.widgets[widgetIndex] = { ...widget };
-            console.log(" Updated widget in app.widgets array");
-        }
-    
-        // Update last modified timestamp
-        widget.lastUpdated = new Date();
-        if (this.app.currentDashboard) {
-            this.app.currentDashboard.lastModified = new Date();
-        }
-
-    // Send to backend (only expected fields)
-    try {
-        const payload = {
-            title: widget.title || '',
-            apiEndpoint: widget.apiEndpoint || '',
-            refreshInterval: widget.refreshInterval || 0,
-            fontSizeInput: widget.fontSizeInput || '',
-            textContentInput: widget.textContentInput || ''
-        };
-        //console.log("payload",payload)
-        const response = await fetch('http://localhost:5000/save-widget', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-       const result = await response.json();
-        console.log('Backend response:', result);
-        if (!response.ok) {
-           window.navigationManager.showNotification(result.message, 'error');
-        } 
-        else {
-            window.navigationManager.showNotification(result.message, 'success');
-        }
-         //  Saving dashboard to sync with backend
-          if (this.app && typeof this.app.saveDashboard === 'function') {
-                    console.log("Saving dashboard to sync changes...");
-                    await this.app.saveDashboard();
-            }
-
-     
-    } catch (error) {
-        //console.error('Error sending widget to backend:', error);
-        //if (window.navigationManager) {
-          //  window.navigationManager.showNotification('Error saving widget', 'error');
-       // }
-        
-         // Still save locally even if backend fails
-                if (this.app && typeof this.app.saveDashboard === 'function') {
-                    console.log("Save to Backend failed, saving locally...");
-                    await this.app.saveDashboard();
-                }
-        
-                if (window.navigationManager) {
-                    window.navigationManager.showNotification(
-                        error.message || 'Widget saved locally. Backend sync failed.', 
-                        'warning'
-                    );
-                }
-    }
-
-    this.closeBottomSheet();
-    this.app.renderWidgets();
-
-    if (window.navigationManager) {
-        window.navigationManager.showNotification('Widget updated successfully', 'success');
-    }
-}
 
     async fetchWidgetData(widget) {
         try {
