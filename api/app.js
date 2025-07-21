@@ -11,7 +11,7 @@ import dbConfig from './dbConfig.js';
 
 app.use(bodyParser.json());
 app.use(cors({
-  origin: 'https://edge.ncgafrica.com:8443',
+  origin: 'http://localhost:3000',
   credentials: true
 }));
 
