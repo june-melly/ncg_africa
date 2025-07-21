@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-dotenv.config(); // Load environment variables from .env
+dotenv.config({ path: './api/.env' }); // Load environment variables from .env
 
 const dbConfig = {
   server: process.env.SERVER,

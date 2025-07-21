@@ -122,10 +122,11 @@ async loadStoredQuery() {
 
     const result = await response.json();
      
-    return result
+    return result || [];
     
   } catch (error) {
     console.error('Error loading Stored Query:', error);
+    return [];
   }
 }
 
