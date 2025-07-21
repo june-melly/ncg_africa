@@ -322,48 +322,7 @@ app.use((req, res) => {
   res.status(404).json({ message: 'Page not found' });
 });
 
-
-
-
-
-
-// Certificate details
-const keyFile = 'edge.ncgafrica.com-key.pem';
-const certFile = 'edge.ncgafrica.com-crt.pem';
-const caFile = 'edge.ncgafrica.com-chain-only.pem';
-
-
-
-// Read certificate and start server
-fs.readFile(keyFile, 'utf8', (err, keyData) => {
-   if (err) {
-       console.error('Error reading key file:', err);
-       return;
-   }
-
-   try {
-       const certData = fs.readFileSync(certFile, 'utf8');
-       const caData = fs.readFileSync(caFile, 'utf8');
-
-       const options = {
-           key: keyData,
-           cert: certData,
-           ca: caData,
-            passphrase: "password"
-
-       };
-
-       const server = spdy.createServer(options, app);
-
-       server.on('error', (error) => {
-           console.error('Server error:', error);
-       });
-
-       server.listen(PORT, '0.0.0.0', () => {
-           console.log(`Secure server running on port ${PORT}`);
-       });
-
-   } catch (readErr) {
-       console.error('Error reading certificate or chain file:', readErr);
-   }
+// Start HTTP server for local development
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`HTTP server running on port ${PORT}`);
 });

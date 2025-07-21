@@ -109,7 +109,7 @@ export class WidgetRenderer {
 
 async loadStoredQuery() {
   try {
-    const response = await fetch(`https://localhost:5000/loadStoredQuery`, {
+    const response = await fetch(`http://localhost:5000/loadStoredQuery`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -686,7 +686,7 @@ async applyWidgetChanges(bottomSheet, widget) {
             textContentInput: widget.textContentInput || ''
         };
         //console.log("payload",payload)
-        const response = await fetch('https://localhost:5000/save-widget', {
+        const response = await fetch('http://localhost:5000/save-widget', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
