@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
-    "serve": "node server.js"
+    "serve": "node server.js",
+    "api": "node api/app.js"
   },
   "dependencies": {
     "body-parser": "^2.2.0",
