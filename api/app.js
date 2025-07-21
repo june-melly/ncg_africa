@@ -11,7 +11,7 @@ import dbConfig from './dbConfig.js';
 
 app.use(bodyParser.json());
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: 'http://localhost:3001',
   credentials: true
 }));
 
