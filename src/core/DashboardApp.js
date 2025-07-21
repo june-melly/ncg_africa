@@ -480,52 +480,6 @@ export class DashboardApp {
             this.autoResizeNameInput(nameInput);
         }
     }
-    
-    saveDashboard() {
-        if (!this.currentDashboard) return;
-        
-        // Update dashboard data
-        this.currentDashboard.widgets = [...this.widgets];
-        this.currentDashboard.lastModified = new Date();
-        
-        // API TODO: Save dashboard to backend instead of localStorage
-        // API Endpoint: PUT /api/dashboards/{id}
-        // Payload: { name, description, widgets, layout, settings }
-        // Should handle optimistic updates, conflict resolution
-        // Consider implementing auto-save with debouncing
-        
-        // Get existing dashboards from localStorage
-        const savedDashboards = this.getSavedDashboards();
-        
-        // Find existing dashboard or add new one
-        const existingIndex = savedDashboards.findIndex(d => d.id === this.currentDashboard.id);
-        if (existingIndex >= 0) {
-            } else {
-                window.widgetRenderer = new widgetRendererModule.WidgetRenderer(window.dashboardApp, this.apiBaseUrl);
-                window.dashboardApp.widgetRenderer = window.widgetRenderer;
-            savedDashboards[existingIndex] = this.currentDashboard;
-        } else {
-            savedDashboards.unshift(this.currentDashboard);
-        }
-        
-        // Save to localStorage
-        try {
-            localStorage.setItem('savedDashboards', JSON.stringify(savedDashboards));
-            
-            // Update home screen to show the saved dashboard
-            if (this.screens.dashboard) {
-                this.screens.dashboard.loadSavedDashboards();
-            }
-            
-            return true;
-        } catch (error) {
-            console.error('Error saving dashboard:', error);
-            if (window.navigationManager) {
-                window.navigationManager.showNotification('Failed to save dashboard', 'error');
-            }
-            return false;
-        }
-    }
     async getSavedDashboards() {
     try {
         // First, try to get from API
