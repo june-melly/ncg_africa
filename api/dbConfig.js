@@ -16,8 +16,8 @@ const dbConfig = {
   password: process.env.PASSWORD,
   port: 1433,
   options: {
-    encrypt: true,
-    trustServerCertificate: true,
+    encrypt: true,  // Keep true for live server (edge.ncgafrica.com)
+    trustServerCertificate: true,  // Keep true for live server SSL
   },
 };
 

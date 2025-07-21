@@ -17,12 +17,15 @@ export class DashboardApp {
     getApiBaseUrl() {
         const hostname = window.location.hostname;
         
+        // TODO: To use live server, uncomment the line below and comment out the webcontainer logic
+        // return 'https://edge.ncgafrica.com:5000';
+        
         if (hostname.includes('webcontainer-api.io')) {
             // For web containers, replace port 3001 with 5000
             return `${window.location.protocol}//${hostname.replace('3001', '5000')}`;
         }
         
-        // Fallback for local development
+        // Fallback for local development - change to live server URL when needed
         return 'http://localhost:5000';
     }
     
