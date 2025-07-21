@@ -137,7 +137,7 @@ export class DashboardApp {
             console.log("newName",newName)
 
             try {
-                const response = await fetch(`https://localhost:5000/editdashboardname/${dashboardId}`, {
+                const response = await fetch(`http://localhost:5000/editdashboardname/${dashboardId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
@@ -315,7 +315,7 @@ export class DashboardApp {
        
         console.log("test",{ name, description })
         // API call to create dashboard on backend
-        const response = await fetch('https://localhost:5000/create-dashboard', {
+        const response = await fetch('http://localhost:5000/create-dashboard', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -510,7 +510,7 @@ export class DashboardApp {
     async getSavedDashboards() {
     try {
         // First, try to get from API
-        const response = await fetch('https://localhost:5000/alldashboards', {
+        const response = await fetch('http://localhost:5000/alldashboards', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -596,7 +596,7 @@ export class DashboardApp {
             
         try {
             // First, try to get specific dashboard from API
-            const response = await fetch(`https://localhost:5000/render/${dashboardId}`, {
+            const response = await fetch(`http://localhost:5000/render/${dashboardId}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
@@ -718,7 +718,7 @@ loadDashboardData(dashboard) {
             
             try {
                 // Try to save to API first
-                const response = await fetch(`https://localhost:5000/editdashboardname/${this.currentDashboard.id}`, {
+                const response = await fetch(`http://localhost:5000/editdashboardname/${this.currentDashboard.id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
@@ -774,7 +774,7 @@ loadDashboardData(dashboard) {
     
     try {
         //  delete from API first
-        const response = await fetch(`https://localhost:5000/deletedahboard/${dashboardId}`, {
+        const response = await fetch(`http://localhost:5000/deletedahboard/${dashboardId}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json'
