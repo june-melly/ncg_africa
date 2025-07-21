@@ -1,7 +1,8 @@
 // Widget rendering and management
 export class WidgetRenderer {
-    constructor(app) {
+    constructor(app, apiBaseUrl) {
         this.app = app;
+        this.apiBaseUrl = apiBaseUrl || this.getApiBaseUrl();
         this.dragState = {
             isDragging: false,
             isResizing: false,
@@ -14,6 +15,18 @@ export class WidgetRenderer {
         };
         this.bottomSheetClickHandler = null;
         this.setupGlobalEventListeners();
+    }
+
+    getApiBaseUrl() {
+        const hostname = window.location.hostname;
+        
+        if (hostname.includes('webcontainer-api.io')) {
+            // For web containers, replace port 3001 with 5000
+            return `${window.location.protocol}//${hostname.replace('3001', '5000')}`;
+        }
+        
+        // Fallback for local development
+        return 'http://localhost:5000';
     }
 
     setupGlobalEventListeners() {
@@ -109,7 +122,7 @@ export class WidgetRenderer {
 
 async loadStoredQuery() {
   try {
-    const response = await fetch(`http://localhost:5000/loadStoredQuery`, {
+    const response = await fetch(`${this.apiBaseUrl}/loadStoredQuery`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -578,7 +591,7 @@ async applyWidgetChanges(bottomSheet, widget) {
             textContentInput: widget.textContentInput || 'null'
         };
         console.log(payload)
-        const response = await fetch('http://localhost:5000/save-widget', {
+        const response = await fetch(`${this.apiBaseUrl}/save-widget`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({payload})

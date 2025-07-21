@@ -1,6 +1,7 @@
 // Core application class - main entry point
 export class DashboardApp {
     constructor() {
+        this.apiBaseUrl = this.getApiBaseUrl();
         this.currentScreen = 'dashboard';
         this.widgets = [];
         this.selectedWidget = null;
@@ -11,6 +12,18 @@ export class DashboardApp {
         this.screens = {};
         
         this.init();
+    }
+    
+    getApiBaseUrl() {
+        const hostname = window.location.hostname;
+        
+        if (hostname.includes('webcontainer-api.io')) {
+            // For web containers, replace port 3001 with 5000
+            return `${window.location.protocol}//${hostname.replace('3001', '5000')}`;
+        }
+        
+        // Fallback for local development
+        return 'http://localhost:5000';
     }
     
     async init() {
@@ -39,6 +52,9 @@ export class DashboardApp {
         } catch (error) {
             console.error('Failed to load screen modules:', error);
         }
+        
+        // Log the API base URL for debugging
+        console.log('🔗 Using API base URL:', this.apiBaseUrl);
     }
     
     setupEventListeners() {
@@ -137,7 +153,7 @@ export class DashboardApp {
             console.log("newName",newName)
 
             try {
-                const response = await fetch(`http://localhost:5000/editdashboardname/${dashboardId}`, {
+                const response = await fetch(`${this.apiBaseUrl}/editdashboardname/${dashboardId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
@@ -484,6 +500,9 @@ export class DashboardApp {
         // Find existing dashboard or add new one
         const existingIndex = savedDashboards.findIndex(d => d.id === this.currentDashboard.id);
         if (existingIndex >= 0) {
+            } else {
+                window.widgetRenderer = new widgetRendererModule.WidgetRenderer(window.dashboardApp, this.apiBaseUrl);
+                window.dashboardApp.widgetRenderer = window.widgetRenderer;
             savedDashboards[existingIndex] = this.currentDashboard;
         } else {
             savedDashboards.unshift(this.currentDashboard);
@@ -596,7 +615,7 @@ export class DashboardApp {
             
         try {
             // First, try to get specific dashboard from API
-            const response = await fetch(`http://localhost:5000/render/${dashboardId}`, {
+            const response = await fetch(`${this.apiBaseUrl}/deletedahboard/${dashboardId}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
@@ -718,7 +737,7 @@ loadDashboardData(dashboard) {
             
             try {
                 // Try to save to API first
-                const response = await fetch(`http://localhost:5000/editdashboardname/${this.currentDashboard.id}`, {
+                const response = await fetch(`${this.apiBaseUrl}/editdashboardname/${this.currentDashboard.id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
