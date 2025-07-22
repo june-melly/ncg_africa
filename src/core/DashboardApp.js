@@ -7,6 +7,8 @@ export class DashboardApp {
         this.selectedWidget = null;
         this.widgetCounter = 0;
         this.currentDashboard = null;
+        this.localApiBaseUrl = this.getLocalApiBaseUrl();
+        this.edgeApiBaseUrl = 'https://edge.ncgafrica.com:5000';
         
         // Screen managers
         this.screens = {};
@@ -14,6 +16,7 @@ export class DashboardApp {
         this.init();
     }
     
+<<<<<<< Updated upstream
     getApiBaseUrl() {
         const hostname = window.location.hostname;
         
@@ -27,6 +30,21 @@ export class DashboardApp {
         
         // Fallback for local development - change to live server URL when needed
         return 'http://localhost:5000';
+=======
+    getLocalApiBaseUrl() {
+        const hostname = window.location.hostname;
+        
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            // For localhost development, always use HTTP for API
+            return `http://${hostname}:5001`;
+        } else if (hostname.includes('webcontainer-api.io') || hostname.includes('stackblitz.io')) {
+            // For web containers, replace port 3000 with 5001 and use same protocol
+            return `${window.location.protocol}//${hostname.replace('3000', '5001')}`;
+        }
+        
+        // Fallback for local development
+        return 'http://localhost:5001';
+>>>>>>> Stashed changes
     }
     
     async init() {
@@ -334,7 +352,12 @@ export class DashboardApp {
        
         console.log("test",{ name, description })
         // API call to create dashboard on backend
+<<<<<<< Updated upstream
         const response = await fetch('http://localhost:5000/create-dashboard', {
+=======
+      
+        const response = await fetch(`${this.edgeApiBaseUrl}/create-dashboard`, {
+>>>>>>> Stashed changes
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -486,7 +509,11 @@ export class DashboardApp {
     async getSavedDashboards() {
     try {
         // First, try to get from API
+<<<<<<< Updated upstream
         const response = await fetch('http://localhost:5000/alldashboards', {
+=======
+        const response = await fetch(`${this.edgeApiBaseUrl}/alldashboards`, {
+>>>>>>> Stashed changes
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -572,7 +599,11 @@ export class DashboardApp {
             
         try {
             // First, try to get specific dashboard from API
+<<<<<<< Updated upstream
             const response = await fetch(`${this.apiBaseUrl}/deletedahboard/${dashboardId}`, {
+=======
+            const response = await fetch(`${this.edgeApiBaseUrl}/render/${dashboardId}`, {
+>>>>>>> Stashed changes
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
@@ -694,7 +725,11 @@ loadDashboardData(dashboard) {
             
             try {
                 // Try to save to API first
+<<<<<<< Updated upstream
                 const response = await fetch(`${this.apiBaseUrl}/editdashboardname/${this.currentDashboard.id}`, {
+=======
+                const response = await fetch(`${this.edgeApiBaseUrl}/editdashboardname/${this.currentDashboard.id}`, {
+>>>>>>> Stashed changes
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
@@ -750,7 +785,11 @@ loadDashboardData(dashboard) {
     
     try {
         //  delete from API first
+<<<<<<< Updated upstream
         const response = await fetch(`http://localhost:5000/deletedahboard/${dashboardId}`, {
+=======
+        const response = await fetch(`${this.edgeApiBaseUrl}/deletedahboard/${dashboardId}`, {
+>>>>>>> Stashed changes
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json'

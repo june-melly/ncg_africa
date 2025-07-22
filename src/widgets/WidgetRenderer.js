@@ -95,22 +95,43 @@ export class WidgetRenderer {
     bottomSheet.className = 'bottom-sheet-editor';
 
     const widgetRect = widgetElement.getBoundingClientRect();
-    const canvasRect = widgetElement.parentElement.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const sheetWidth = 400; // Approximate width of bottom sheet
+    const sheetHeight = 500; // Approximate height of bottom sheet
 
-    const leftPosition = widgetRect.left - canvasRect.left;
-    const topPosition = widgetRect.bottom - canvasRect.top + 10;
-
-    bottomSheet.style.position = 'absolute';
-    bottomSheet.style.left = `${leftPosition}px`;
-    bottomSheet.style.top = `${topPosition}px`;
+    // Calculate optimal position
+    let left = widgetRect.left;
+    let top = widgetRect.bottom + 10;
+    
+    // Adjust horizontal position if sheet would go off-screen
+    if (left + sheetWidth > viewportWidth) {
+        left = Math.max(10, viewportWidth - sheetWidth - 10);
+    }
+    
+    // Adjust vertical position if sheet would go off-screen
+    if (top + sheetHeight > viewportHeight) {
+        // Try positioning above the widget
+        const topPosition = widgetRect.top - sheetHeight - 10;
+        if (topPosition > 10) {
+            top = topPosition;
+        } else {
+            // Center vertically if neither above nor below works
+            top = Math.max(10, (viewportHeight - sheetHeight) / 2);
+        }
+    }
+    
+    bottomSheet.style.position = 'fixed';
+    bottomSheet.style.left = `${left}px`;
+    bottomSheet.style.top = `${top}px`;
     bottomSheet.style.zIndex = '1000';
 
     // ✅ Wait until HTML is generated, THEN attach and bind events
     this.createBottomSheetHTML(widget).then(html => {
         bottomSheet.innerHTML = html;
 
-        // ✅ Append and bind only after innerHTML is set
-        widgetElement.parentElement.appendChild(bottomSheet);
+        // ✅ Append to document.body to avoid null parentElement issues
+        document.body.appendChild(bottomSheet);
 
         this.setupBottomSheetEvents(bottomSheet, widget);
 
@@ -125,7 +146,11 @@ export class WidgetRenderer {
 
 async loadStoredQuery() {
   try {
+<<<<<<< Updated upstream
     const response = await fetch(`${this.apiBaseUrl}/loadStoredQuery`, {
+=======
+    const response = await fetch(`${this.app.edgeApiBaseUrl}/loadStoredQuery`, {
+>>>>>>> Stashed changes
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -138,7 +163,11 @@ async loadStoredQuery() {
 
     const result = await response.json();
      
+<<<<<<< Updated upstream
     return result || [];
+=======
+    return result;
+>>>>>>> Stashed changes
     
   } catch (error) {
     console.error('Error loading Stored Query:', error);
@@ -151,9 +180,9 @@ async loadStoredQuery() {
 
 
     async createBottomSheetHTML(widget) {
-          const data = await this.loadStoredQuery()
+          const data = await this.loadStoredQuery();
        
-         const queryOptions = data.map(item => `
+         const queryOptions = (data || []).map(item => `
     <option value="${item.Title}" >${item.Title}</option>
   `).join('');
         return `
@@ -572,12 +601,15 @@ async applyWidgetChanges(bottomSheet, widget) {
         }
     }
        // Update the widget in the dashboard app's widgets array
+<<<<<<< Updated upstream
         const widgetIndex = this.app.widgets.findIndex(w => w.id === widget.id);
         if (widgetIndex >= 0) {
             this.app.widgets[widgetIndex] = { ...widget };
             console.log(" Updated widget in app.widgets array");
         }
     
+=======
+>>>>>>> Stashed changes
         // Update last modified timestamp
         widget.lastUpdated = new Date();
         if (this.app.currentDashboard) {
@@ -587,6 +619,7 @@ async applyWidgetChanges(bottomSheet, widget) {
     // Send to backend (only expected fields)
     try {
         const payload = {
+<<<<<<< Updated upstream
             title: widget.title || 'null',
             selectedQuery: widget.apiEndpoint || 'null',
             refreshInterval: widget.refreshInterval || 0,
@@ -602,6 +635,25 @@ async applyWidgetChanges(bottomSheet, widget) {
        const result = await response.json();
         console.log('Backend response:', result.savedQuery);
         if (!result.message=='Data inserted successfully') {
+=======
+            id: widget.id, // Include widget ID for update operations
+            type: widget.type, // Include widget type
+            title: widget.title || '',
+            selectedQuery: widget.apiEndpoint || '', // Backend expects selectedQuery
+            refreshInterval: widget.refreshInterval || 0,
+            fontSize: widget.fontSize || 24, // Map to fontSize
+            content: widget.content || '' // Map to content
+        };
+        //console.log("payload",payload)
+        const response = await fetch(`${this.app.localApiBaseUrl}/save-widget`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+       const result = await response.json();
+        console.log('Backend response:', result);
+        if (!response.ok) {
+>>>>>>> Stashed changes
            window.navigationManager.showNotification(result.message, 'error');
         } 
         else {
@@ -635,80 +687,215 @@ async applyWidgetChanges(bottomSheet, widget) {
     }
 
     this.closeBottomSheet();
+<<<<<<< Updated upstream
     this.app.renderWidgets();
+=======
+    
+    // Add small delay to ensure data updates are complete before rendering
+    setTimeout(() => {
+        this.app.renderWidgets();
+    }, 100);
+>>>>>>> Stashed changes
 
     if (window.navigationManager) {
         window.navigationManager.showNotification('Widget updated successfully', 'success');
     }
+<<<<<<< Updated upstream
 } 
+=======
+}
+>>>>>>> Stashed changes
 
     async fetchWidgetData(widget) {
         try {
-           
-            const response = await fetch(widget.apiEndpoint);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            console.log(`📊 Fetching data for widget: ${widget.title}`);
+            
+            // Show loading state
+            widget.isLoading = true;
+            widget.error = null;
+            this.app.renderWidgets();
 
-            const data = await response.json();
-
-            if (window.dataManager) {
-                const processedData = window.dataManager.processData(data, widget.type === 'table' ? 'table' : 'chart');
+            // Use DataManager to fetch data from the correct endpoint
+            const options = {
+                queryTitle: widget.apiEndpoint,
+                widgetType: widget.type,
+                apiBaseUrl: this.app.edgeApiBaseUrl,
+                dataType: widget.type === 'table' ? 'table' : 'chart'
+            };
+            
+            // Use DataManager to fetch data from /api/query-data endpoint
+            const apiData = await window.dataManager.fetchData(null, options);
+            
+            if (apiData && Array.isArray(apiData)) {
+                // Process the data directly (DataManager returns the data array)
+                const processedData = this.processApiData(apiData, widget.type);
+                
                 widget.data = processedData;
                 widget.hasData = true;
+                widget.isLoading = false;
                 widget.lastUpdated = new Date();
+                widget.error = null;
 
                 // Setup auto-refresh if interval is set
-                if (widget.refreshInterval > 0) {
-                    window.dataManager.setupAutoRefresh(widget.id, widget.apiEndpoint, widget.refreshInterval, (newData) => {
-                        widget.data = window.dataManager.processData(newData, widget.type === 'table' ? 'table' : 'chart');
-                        widget.lastUpdated = new Date();
-                        this.app.renderWidgets();
+                if (widget.refreshInterval > 0 && window.dataManager) {
+                    window.dataManager.setupAutoRefresh(widget.id, options, widget.refreshInterval, async () => {
+                        try {
+                            await this.fetchWidgetData(widget);
+                        } catch (error) {
+                            console.error('Auto-refresh failed:', error);
+                        }
                     });
                 }
+
+                // Re-render the widget with new data
+                this.app.renderWidgets();
+                
+                if (window.navigationManager) {
+                    window.navigationManager.showNotification('Data loaded successfully', 'success');
+                }
+            } else {
+                throw new Error('No data received from API');
             }
         } catch (error) {
-            console.error('Error fetching widget data:', error);
+            console.error('❌ Error fetching widget data:', error);
+            widget.isLoading = false;
+            widget.hasData = false;
+            widget.error = error.message;
+            this.app.renderWidgets();
+
             if (window.navigationManager) {
                 window.navigationManager.showNotification('Failed to fetch data from API', 'error');
             }
         }
     }
 
+    // Add data processing methods
+    processApiData(rawData, widgetType) {
+        console.log(`🔄 Processing API data for ${widgetType}:`, rawData);
+        
+        if (!Array.isArray(rawData) || rawData.length === 0) {
+            throw new Error('No data to process');
+        }
+
+        switch (widgetType) {
+            case 'table':
+                return this.processTableData(rawData);
+            case 'single-value':
+                return this.processSingleValue(rawData);
+            case 'bar':
+            case 'line':
+            case 'pie':
+            case 'donut':
+            case 'histogram':
+            default:
+                return this.processChartData(rawData);
+        }
+    }
+
+    processTableData(rawData) {
+        return rawData.map(row => {
+            const cleanRow = {};
+            Object.keys(row).forEach(key => {
+                const cleanKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+                cleanRow[cleanKey] = row[key] !== null ? String(row[key]) : '';
+            });
+            return cleanRow;
+        });
+    }
+
+    processSingleValue(rawData) {
+        const item = rawData[0];
+        
+        // Look for total/count fields in your data
+        let value = item.TotalApp || item.messageCollected || item.ErrorCount || item.Total || 0;
+        let label = item.AppName || 'Total Value';
+        
+        return {
+            value: value,
+            label: label,
+            formatted: value.toLocaleString()
+        };
+    }
+
+    processChartData(rawData) {
+        console.log(`📊 Processing chart data:`, rawData);
+        
+        const processedData = rawData.map((item, index) => {
+            // Use AppName as the label and messageCollected as the value
+            const name = item.AppName || item.name || `Item ${index + 1}`;
+            const value = item.messageCollected || item.TotalApp || item.ErrorCount || item.value || 0;
+            
+            return {
+                name: name,
+                value: Number(value),
+                label: name,
+                color: this.getChartColor(index)
+            };
+        }).filter(item => item.value > 0) // Remove zero values
+          .sort((a, b) => b.value - a.value); // Sort by value descending
+        
+        console.log(`✅ Processed chart data:`, processedData);
+        return processedData;
+    }
+
+    getChartColor(index) {
+        const colors = ['#0D9488', '#059669', '#10B981', '#34D399', '#6EE7B7', '#A7F3D0', '#FF6B6B', '#4ECDC4'];
+        return colors[index % colors.length];
+    }
+
     loadSampleData(widgetId, widgetType) {
         const widget = this.app.widgets.find(w => w.id === widgetId);
         if (!widget) return;
+
+        console.log(`🎭 Loading sample data for ${widgetType} widget: ${widget.title}`);
 
         // Generate sample data based on widget type
         let sampleData;
 
         if (widgetType === 'table') {
             sampleData = [
-                { name: 'John Doe', age: 30, department: 'Engineering', salary: 75000 },
-                { name: 'Jane Smith', age: 28, department: 'Marketing', salary: 65000 },
-                { name: 'Bob Johnson', age: 35, department: 'Sales', salary: 70000 },
-                { name: 'Alice Brown', age: 32, department: 'HR', salary: 60000 },
-                { name: 'Charlie Wilson', age: 29, department: 'Engineering', salary: 80000 }
+                { AppName: 'General UI', messageCollected: 1452, ErrorCount: 23 },
+                { AppName: 'Nginx', messageCollected: 865, ErrorCount: 12 },
+                { AppName: 'Database', messageCollected: 634, ErrorCount: 8 },
+                { AppName: 'API Gateway', messageCollected: 423, ErrorCount: 5 },
+                { AppName: 'Authentication', messageCollected: 298, ErrorCount: 3 }
             ];
         } else if (widgetType === 'single-value') {
-            sampleData = { value: 1234, label: 'Total Users' };
+            sampleData = { 
+                value: 3672, 
+                label: 'Total Messages',
+                formatted: '3,672'
+            };
         } else {
-            // Chart data
-            sampleData = [
-                { name: 'Product A', value: 30 },
-                { name: 'Product B', value: 45 },
-                { name: 'Product C', value: 25 },
-                { name: 'Product D', value: 60 },
-                { name: 'Product E', value: 35 }
+            // Chart data - using your API format
+            const rawSampleData = [
+                { AppName: 'General UI', messageCollected: 1452 },
+                { AppName: 'Nginx', messageCollected: 865 },
+                { AppName: 'Database', messageCollected: 634 },
+                { AppName: 'API Gateway', messageCollected: 423 },
+                { AppName: 'Authentication', messageCollected: 298 }
             ];
+            
+            // Process using the same logic as real data
+            sampleData = this.processChartData(rawSampleData);
         }
 
         widget.data = sampleData;
         widget.hasData = true;
         widget.lastUpdated = new Date();
+        widget.error = null;
 
         this.closeBottomSheet();
         this.app.renderWidgets();
+
+        // Render chart if it's a chart widget
+        if (widget.type !== 'table' && widget.type !== 'text-header' && window.chartRenderer) {
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    window.chartRenderer.renderChart(widget);
+                }, 150);
+            });
+        }
 
         if (window.navigationManager) {
             window.navigationManager.showNotification('Sample data loaded successfully', 'success');

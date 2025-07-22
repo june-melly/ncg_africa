@@ -27,8 +27,15 @@ export class ChartRenderer {
     renderChart(widget) {
         const container = document.getElementById(`chart-${widget.id}`);
         if (!container || !widget.hasData || !widget.data) {
+            console.log(`❌ Chart render failed for ${widget.id}:`, {
+                container: !!container,
+                hasData: widget.hasData,
+                data: widget.data
+            });
             return;
         }
+        
+        console.log(`📊 Rendering ${widget.type} chart for ${widget.id}:`, widget.data);
         
         if (this.charts.has(widget.id)) {
             this.charts.get(widget.id).destroy();
@@ -46,12 +53,13 @@ export class ChartRenderer {
     
     renderSingleValue(container, widget) {
         const data = widget.data;
-        const value = data?.value || 0;
+        const value = data?.value || data?.formatted || 0;
         const label = data?.label || 'Value';
+        const formatted = data?.formatted || value.toLocaleString();
         
         container.innerHTML = `
             <div class="text-center">
-                <div class="text-4xl font-bold text-teal-600 mb-2">${value.toLocaleString()}</div>
+                <div class="text-4xl font-bold text-teal-600 mb-2">${formatted}</div>
                 <div class="text-sm text-gray-600">${label}</div>
             </div>
         `;
@@ -59,18 +67,28 @@ export class ChartRenderer {
     
     renderChartJS(container, widget) {
         const canvas = document.createElement('canvas');
-        canvas.style.width = '100%';
-        canvas.style.height = '100%';
+        // Set explicit dimensions
+        const containerWidth = container.clientWidth || 300;
+        const containerHeight = container.clientHeight || 200;
+        
+        canvas.width = containerWidth;
+        canvas.height = containerHeight;
+        canvas.style.width = containerWidth + 'px';
+        canvas.style.height = containerHeight + 'px';
         canvas.style.maxWidth = '100%';
         canvas.style.maxHeight = '100%';
+        
         container.appendChild(canvas);
         
         const ctx = canvas.getContext('2d');
         const config = this.getChartConfig(widget);
         
+        console.log(`🎨 Creating chart with config:`, config);
+        
         try {
             const chart = new Chart(ctx, config);
             this.charts.set(widget.id, chart);
+            console.log(`✅ Chart created successfully for ${widget.id}`);
         } catch (error) {
             console.error('Error creating chart:', error);
             container.innerHTML = '<div class="text-center text-gray-500">Error loading chart</div>';
@@ -81,8 +99,11 @@ export class ChartRenderer {
         const data = widget.data;
         
         if (!data || (Array.isArray(data) && data.length === 0)) {
+            console.log(`⚠️ No data for chart ${widget.id}, using empty config`);
             return this.getEmptyChartConfig();
         }
+        
+        console.log(`🔧 Creating config for ${widget.type} with data:`, data);
         
         const baseConfig = {
             responsive: true,
@@ -116,16 +137,33 @@ export class ChartRenderer {
     }
     
     getTypeSpecificConfig(type, data, baseConfig) {
+        // Ensure data is in the correct format
+        const chartData = Array.isArray(data) ? data : [data];
+        
+        // Validate that we have proper chart data
+        const validData = chartData.filter(item => 
+            item && typeof item === 'object' && 
+            (item.name !== undefined || item.label !== undefined) && 
+            (item.value !== undefined && !isNaN(item.value))
+        );
+        
+        if (validData.length === 0) {
+            console.warn('No valid data points found, using empty chart config');
+            return this.getEmptyChartConfig();
+        }
+        
+        console.log(`🎯 Processing ${type} chart with ${chartData.length} data points:`, chartData);
+        
         switch (type) {
             case 'bar':
             case 'histogram':
                 return {
                     type: 'bar',
                     data: {
-                        labels: data.map(item => item.name || item.label),
+                        labels: validData.map(item => item.name || item.label || 'Unknown'),
                         datasets: [{
                             label: 'Values',
-                            data: data.map(item => item.value),
+                            data: validData.map(item => Number(item.value) || 0),
                             backgroundColor: 'rgba(13, 148, 136, 0.8)',
                             borderColor: '#0f766e',
                             borderWidth: 1,
@@ -146,10 +184,10 @@ export class ChartRenderer {
                 return {
                     type: 'line',
                     data: {
-                        labels: data.map(item => item.name || item.label),
+                        labels: validData.map(item => item.name || item.label || 'Unknown'),
                         datasets: [{
                             label: 'Values',
-                            data: data.map(item => item.value),
+                            data: validData.map(item => Number(item.value) || 0),
                             borderColor: '#0d9488',
                             backgroundColor: 'rgba(13, 148, 136, 0.1)',
                             tension: 0.4,
@@ -170,34 +208,65 @@ export class ChartRenderer {
                 return {
                     type: 'pie',
                     data: {
-                        labels: data.map(item => item.name || item.label),
+                        labels: validData.map(item => item.name || item.label || 'Unknown'),
                         datasets: [{
-                            data: data.map(item => item.value),
-                            backgroundColor: data.map((item, i) => item.color || this.getDefaultColor(i)),
+                            data: validData.map(item => Number(item.value) || 0),
+                            backgroundColor: validData.map((item, i) => item.color || this.getDefaultColor(i)),
                             borderColor: '#ffffff',
                             borderWidth: 2
                         }]
                     },
-                    options: baseConfig
+                    options: {
+                        ...baseConfig,
+                        plugins: {
+                            ...baseConfig.plugins,
+                            legend: {
+                                display: true,
+                                position: 'bottom',
+                                labels: {
+                                    padding: 15,
+                                    usePointStyle: true,
+                                    font: { size: 11 },
+                                    color: '#374151'
+                                }
+                            }
+                        }
+                    }
                 };
                 
             case 'donut':
                 return {
                     type: 'doughnut',
                     data: {
-                        labels: data.map(item => item.name || item.label),
+                        labels: validData.map(item => item.name || item.label || 'Unknown'),
                         datasets: [{
-                            data: data.map(item => item.value),
-                            backgroundColor: data.map((item, i) => item.color || this.getDefaultColor(i)),
+                            data: validData.map(item => Number(item.value) || 0),
+                            backgroundColor: validData.map((item, i) => item.color || this.getDefaultColor(i)),
                             borderColor: '#ffffff',
                             borderWidth: 2,
                             cutout: '60%'
                         }]
                     },
-                    options: baseConfig
+                    options: {
+                        ...baseConfig,
+                        plugins: {
+                            ...baseConfig.plugins,
+                            legend: {
+                                display: true,
+                                position: 'bottom',
+                                labels: {
+                                    padding: 15,
+                                    usePointStyle: true,
+                                    font: { size: 11 },
+                                    color: '#374151'
+                                }
+                            }
+                        }
+                    }
                 };
                 
             default:
+                console.warn(`Unknown chart type: ${type}, defaulting to bar chart`);
                 return this.getEmptyChartConfig();
         }
     }

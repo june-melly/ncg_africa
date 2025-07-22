@@ -12,6 +12,29 @@ export class DataManager {
         // Implement request/response interceptors for logging, error handling
         
         try {
+            // Handle query-based data fetching
+            if (options.queryTitle && options.apiBaseUrl) {
+                const response = await fetch(`${options.apiBaseUrl}/api/query-data`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    body: JSON.stringify({
+                        queryTitle: options.queryTitle,
+                        widgetType: options.widgetType || 'chart'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                return this.processData(data, options.dataType);
+            }
+            
+            // Standard endpoint fetching
             const response = await fetch(endpoint, {
                 method: options.method || 'GET',
                 headers: {
@@ -91,7 +114,7 @@ export class DataManager {
         return colors[index % colors.length];
     }
     
-    setupAutoRefresh(widgetId, endpoint, interval, callback) {
+    setupAutoRefresh(widgetId, fetchOptions, interval, callback) {
         // API TODO: Implement intelligent auto-refresh
         // Respect API rate limits, implement exponential backoff
         // Pause refresh when tab is not visible
@@ -105,7 +128,7 @@ export class DataManager {
                     // API TODO: Check if tab is visible before refreshing
                     // if (document.hidden) return;
                     
-                    const data = await this.fetchData(endpoint);
+                    const data = await this.fetchData(fetchOptions.endpoint, fetchOptions);
                     callback(data);
                     
                     // API TODO: Log successful refresh for analytics
