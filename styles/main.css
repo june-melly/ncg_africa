@@ -1140,3 +1140,79 @@ input:checked + .slider:before {
 .text-header-box:hover::before {
   opacity: 1;
 }
+
+/* Transaction Monitoring Styles */
+.view-toggle-btn {
+    color: #6B7280;
+    background-color: transparent;
+    transition: all 0.2s ease;
+}
+
+.view-toggle-btn:hover {
+    color: #111827;
+}
+
+.view-toggle-btn.active {
+    background-color: white !important;
+    color: #111827 !important;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.transaction-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.transaction-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.notification-badge {
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.user-avatar img {
+    object-fit: cover;
+}
+
+/* Loading animation */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Quick range buttons hover effect */
+.quick-range-btn:hover {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+/* Table responsiveness */
+.table-container {
+    overflow-x: auto;
+}
+
+/* Alert animation */
+.critical-alert {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}

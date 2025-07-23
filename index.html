@@ -74,6 +74,22 @@
                         </p>
                     </div>
 
+                    <!-- Transaction Management -->
+                    <div class="mb-6">
+                        <h3 class="sidebar-section-title mb-2">Transaction Monitoring</h3>
+                        <p class="sidebar-description mb-3">
+                            Transaction Monitoring of Channels.
+                        </p>
+                        <!-- Add clickable button -->
+                        <button data-screen="transaction" class="nav-btn w-full flex items-center gap-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-md transition-colors">
+                            <i class="fas fa-chart-line w-4 h-4"></i>
+                            <span class="sidebar-text">View Monitoring</span>
+                        </button>
+                    </div>
+
+                   
+
+
                     <!-- Widget Options -->
                     <div id="widgetOptions" class="hidden mb-6">
                         <h3 class="sidebar-section-title mb-3">Widget Options</h3>
@@ -534,6 +550,19 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Transaction Monitoring Screen -->
+                <div id="transactionScreen" class="screen hidden">
+                    <!-- Loading state - will be replaced by JavaScript -->
+                    <div class="flex items-center justify-center h-full">
+                        <div class="text-center">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4"></div>
+                            <p class="text-gray-600">Loading Transaction Monitoring...</p>
+                        </div>
+                    </div>
+                </div>
+
+            
         </div>
     </div>
 
@@ -772,6 +801,28 @@
 
         // Initialize sidebar after DOM is loaded
         document.addEventListener('DOMContentLoaded', initializeSidebarCollapse);
-    </script>
+   
+   
+        // Transaction Monitoring functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize transaction monitoring when needed
+            if (!window.transactionMonitoringScreen) {
+                window.transactionMonitoringScreen = {
+                    // Copy the complete JavaScript object from the artifact above
+                };
+            }
+        });
+
+        // Update your existing navigation button listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Enhanced navigation handling
+            const navButtons = document.querySelectorAll('.nav-btn');
+            
+            // Copy the navigation handling code from the artifact above
+        });
+   
+   
+   
+   </script>
 </body>
 </html>

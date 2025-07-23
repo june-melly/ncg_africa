@@ -35,21 +35,47 @@ export class DashboardApp {
         try {
             const { DashboardHomeScreen } = await import('../screens/DashboardHomeScreen.js');
             const { DashboardBuilderScreen } = await import('../screens/DashboardBuilderScreen.js');
+            const { TransactionMonitoringScreen } = await import('../screens/TransactionMonitoringScreen.js');
 
             this.screens.dashboard = new DashboardHomeScreen(this);
             this.screens.builder = new DashboardBuilderScreen(this);
+            this.screens.transaction = new TransactionMonitoringScreen(this);
 
             // Make screens globally available for cross-screen communication
             window.dashboardHomeScreen = this.screens.dashboard;
             window.dashboardBuilderScreen = this.screens.builder;
+            window.transactionMonitoringScreen = this.screens.transaction;
+
 
             // Initialize screens
             this.screens.dashboard.init();
             this.screens.builder.init();
+            this.screens.transaction.init();
         } catch (error) {
             console.error('Failed to load screen modules:', error);
+            if (!this.screens.transaction) {
+            console.log('Using inline TransactionMonitoringScreen fallback');
+            this.screens.transaction = {
+                init() { console.log('Transaction screen initialized (fallback)'); },
+                show() { 
+                    console.log('Transaction screen shown (fallback)');
+                    // Use the inline transaction monitoring functionality
+                    if (window.transactionMonitoringScreen) {
+                        window.transactionMonitoringScreen.show();
+                    }
+                },
+                hide() { 
+                    console.log('Transaction screen hidden (fallback)');
+                    if (window.transactionMonitoringScreen) {
+                        window.transactionMonitoringScreen.hide();
+                    }
+                },
+                cleanup() { console.log('Transaction screen cleanup (fallback)'); }
+            };
+            }
         }
     }
+
 
     setupEventListeners() {
         // Navigation
