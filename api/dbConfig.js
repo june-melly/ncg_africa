@@ -1,13 +1,5 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-
-// Get current directory for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Load environment variables with absolute path
-dotenv.config({ path: path.join(__dirname, '.env') });
+dotenv.config(); // Load environment variables from .env
 
 const dbConfig = {
   server: process.env.SERVER,
@@ -16,9 +8,8 @@ const dbConfig = {
   password: process.env.PASSWORD,
   port: 1433,
   options: {
-    encrypt: true,  // Keep true for live server (edge.ncgafrica.com)
-    trustServerCertificate: true,  // Keep true for live server SSL
+    encrypt: true,
+    trustServerCertificate: true,
   },
 };
 
-export default dbConfig;

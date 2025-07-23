@@ -1,8 +1,7 @@
 // Widget rendering and management
 export class WidgetRenderer {
-    constructor(app, apiBaseUrl) {
+    constructor(app) {
         this.app = app;
-        this.apiBaseUrl = apiBaseUrl || this.getApiBaseUrl();
         this.dragState = {
             isDragging: false,
             isResizing: false,
@@ -15,21 +14,6 @@ export class WidgetRenderer {
         };
         this.bottomSheetClickHandler = null;
         this.setupGlobalEventListeners();
-    }
-
-    getApiBaseUrl() {
-        const hostname = window.location.hostname;
-        
-        // TODO: To use live server, uncomment the line below and comment out the webcontainer logic
-        // return 'https://edge.ncgafrica.com:5000';
-        
-        if (hostname.includes('webcontainer-api.io')) {
-            // For web containers, replace port 3001 with 5000
-            return `${window.location.protocol}//${hostname.replace('3001', '5000')}`;
-        }
-        
-        // Fallback for local development - change to live server URL when needed
-        return 'http://localhost:5000';
     }
 
     setupGlobalEventListeners() {
@@ -103,12 +87,12 @@ export class WidgetRenderer {
     // Calculate optimal position
     let left = widgetRect.left;
     let top = widgetRect.bottom + 10;
-    
+
     // Adjust horizontal position if sheet would go off-screen
     if (left + sheetWidth > viewportWidth) {
         left = Math.max(10, viewportWidth - sheetWidth - 10);
     }
-    
+
     // Adjust vertical position if sheet would go off-screen
     if (top + sheetHeight > viewportHeight) {
         // Try positioning above the widget
@@ -120,17 +104,17 @@ export class WidgetRenderer {
             top = Math.max(10, (viewportHeight - sheetHeight) / 2);
         }
     }
-    
+
     bottomSheet.style.position = 'fixed';
     bottomSheet.style.left = `${left}px`;
     bottomSheet.style.top = `${top}px`;
     bottomSheet.style.zIndex = '1000';
 
-    // ✅ Wait until HTML is generated, THEN attach and bind events
+    // Wait until HTML is generated, THEN attach and bind events
     this.createBottomSheetHTML(widget).then(html => {
         bottomSheet.innerHTML = html;
 
-        // ✅ Append to document.body to avoid null parentElement issues
+        // Append to document.body to avoid null parentElement issues
         document.body.appendChild(bottomSheet);
 
         this.setupBottomSheetEvents(bottomSheet, widget);
@@ -146,11 +130,7 @@ export class WidgetRenderer {
 
 async loadStoredQuery() {
   try {
-<<<<<<< Updated upstream
-    const response = await fetch(`${this.apiBaseUrl}/loadStoredQuery`, {
-=======
-    const response = await fetch(`${this.app.edgeApiBaseUrl}/loadStoredQuery`, {
->>>>>>> Stashed changes
+    const response = await fetch(`https://edge.ncgafrica.com:5000/loadStoredQuery`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -162,13 +142,9 @@ async loadStoredQuery() {
     }
 
     const result = await response.json();
-     
-<<<<<<< Updated upstream
-    return result || [];
-=======
+
     return result;
->>>>>>> Stashed changes
-    
+
   } catch (error) {
     console.error('Error loading Stored Query:', error);
     return [];
@@ -179,9 +155,10 @@ async loadStoredQuery() {
 
 
 
+
     async createBottomSheetHTML(widget) {
           const data = await this.loadStoredQuery();
-       
+
          const queryOptions = (data || []).map(item => `
     <option value="${item.Title}" >${item.Title}</option>
   `).join('');
@@ -325,35 +302,37 @@ async loadStoredQuery() {
         }, 100);
     }
 
+   
     closeBottomSheet() {
-        const bottomSheet = document.querySelector('.bottom-sheet-editor');
-        if (bottomSheet) {
-            bottomSheet.classList.remove('visible');
-            setTimeout(() => {
-                bottomSheet.remove();
-            }, 200);
-        }
-
-        // Remove click handler
-        if (this.bottomSheetClickHandler) {
-            document.removeEventListener('click', this.bottomSheetClickHandler);
-            this.bottomSheetClickHandler = null;
-        }
-
-        this.app.selectWidget(null);
+    const bottomSheet = document.querySelector('.bottom-sheet-editor');
+    if (bottomSheet) {
+        bottomSheet.classList.remove('visible');
+        setTimeout(() => {
+            bottomSheet.remove();
+        }, 100);
     }
 
-     
+    // Remove click handler
+    if (this.bottomSheetClickHandler) {
+        document.removeEventListener('click', this.bottomSheetClickHandler);
+        this.bottomSheetClickHandler = null;
+    }
+
+    this.app.selectWidget(null);
+}
+ 
+
+
     createTextHeaderHTML(widget) {
-      
+
         const fontSize = widget.fontSize || Math.min(24, widget.size.height * 0.4);
         return `
-            <div class="text-header-input" 
-                 contenteditable="true" 
+            <div class="text-header-input"
+                 contenteditable="true"
                  data-placeholder="Enter header text..."
                  style="font-size: ${fontSize}px; line-height: 1.2;"
             >${widget.content || ''}</div>
-            
+
             <div class="text-header-actions">
                 <button class="text-header-action-btn edit-btn" title="Edit">
                     <i class="fas fa-edit"></i>
@@ -362,15 +341,87 @@ async loadStoredQuery() {
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
-            
+
             <div class="text-header-resize-handle" title="Resize">
                 <div class="resize-handle-icon"></div>
             </div>
         `;
     }
 
-    createTableWidgetHTML(widget) {
+   createTableWidgetHTML(widget) {
+        console.log('Creating table widget HTML for:', widget.id, 'isLoading:', widget.isLoading, 'hasData:', widget.hasData);
+        
+        // Show loading state
+        if (widget.isLoading) {
+            console.log('Rendering loading state for table widget');
+            return `
+                <div class="widget-header">
+                    <div class="dot-controls">
+                        <div class="dot red" data-action="delete" title="Delete"></div>
+                        <div class="dot yellow" data-action="minimize" title="Minimize"></div>
+                        <div class="dot green" data-action="expand" title="Expand"></div>
+                    </div>
+                    <h3 class="widget-title">${widget.title}</h3>
+                    <div class="widget-actions">
+                        <button class="p-1 text-gray-400 hover:text-gray-600 config-btn" title="Configure">
+                            <i class="fas fa-cog w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <div class="text-center text-gray-500 py-8">
+                        <div class="loading-spinner" style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
+                            <div style="width: 32px; height: 32px; border: 4px solid #e5e7eb; border-top: 4px solid #0d9488; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        </div>
+                        <p class="mt-4 text-sm">Loading data...</p>
+                    </div>
+                </div>
+                <div class="resize-handle" title="Resize">
+                    <div class="resize-handle-icon"></div>
+                </div>
+                <style>
+                    @keyframes spin {
+                        to { transform: rotate(360deg); }
+                    }
+                </style>
+            `;
+        }
+
+        // Show error state
+        if (widget.error) {
+            console.log('Rendering error state for table widget');
+            return `
+                <div class="widget-header">
+                    <div class="dot-controls">
+                        <div class="dot red" data-action="delete" title="Delete"></div>
+                        <div class="dot yellow" data-action="minimize" title="Minimize"></div>
+                        <div class="dot green" data-action="expand" title="Expand"></div>
+                    </div>
+                    <h3 class="widget-title">${widget.title}</h3>
+                    <div class="widget-actions">
+                        <button class="p-1 text-gray-400 hover:text-gray-600 config-btn" title="Configure">
+                            <i class="fas fa-cog w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <div class="text-center text-red-500 py-8">
+                        <i class="fas fa-exclamation-triangle text-4xl text-red-300 mb-4"></i>
+                        <p class="mb-3">Error loading data</p>
+                        <p class="text-sm text-red-400">${widget.error}</p>
+                        <button class="mt-3 px-4 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors retry-btn">
+                            Retry
+                        </button>
+                    </div>
+                </div>
+                <div class="resize-handle" title="Resize">
+                    <div class="resize-handle-icon"></div>
+                </div>
+            `;
+        }
+
         if (!widget.hasData) {
+            console.log('Rendering no data state for table widget');
             return `
                 <div class="widget-header">
                     <div class="dot-controls">
@@ -398,12 +449,86 @@ async loadStoredQuery() {
             `;
         }
 
+        console.log('Rendering data state for table widget');
         // If widget has data, render the actual table
         return this.renderTableWithData(widget);
     }
 
+    
     createChartWidgetHTML(widget) {
+        console.log('Creating chart widget HTML for:', widget.id, 'isLoading:', widget.isLoading, 'hasData:', widget.hasData);
+        
+        // Show loading state
+        if (widget.isLoading) {
+            console.log('Rendering loading state for chart widget');
+            return `
+                <div class="widget-header">
+                    <div class="dot-controls">
+                        <div class="dot red" data-action="delete" title="Delete"></div>
+                        <div class="dot yellow" data-action="minimize" title="Minimize"></div>
+                        <div class="dot green" data-action="expand" title="Expand"></div>
+                    </div>
+                    <h3 class="widget-title">${widget.title}</h3>
+                    <div class="widget-actions">
+                        <button class="p-1 text-gray-400 hover:text-gray-600 config-btn" title="Configure">
+                            <i class="fas fa-cog w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <div class="text-center text-gray-500 py-8">
+                        <div class="loading-spinner" style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
+                            <div style="width: 32px; height: 32px; border: 4px solid #e5e7eb; border-top: 4px solid #0d9488; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        </div>
+                        <p class="mt-4 text-sm">Loading chart data...</p>
+                    </div>
+                </div>
+                <div class="resize-handle" title="Resize">
+                    <div class="resize-handle-icon"></div>
+                </div>
+                <style>
+                    @keyframes spin {
+                        to { transform: rotate(360deg); }
+                    }
+                </style>
+            `;
+        }
+
+        // Show error state
+        if (widget.error) {
+            console.log('Rendering error state for chart widget');
+            return `
+                <div class="widget-header">
+                    <div class="dot-controls">
+                        <div class="dot red" data-action="delete" title="Delete"></div>
+                        <div class="dot yellow" data-action="minimize" title="Minimize"></div>
+                        <div class="dot green" data-action="expand" title="Expand"></div>
+                    </div>
+                    <h3 class="widget-title">${widget.title}</h3>
+                    <div class="widget-actions">
+                        <button class="p-1 text-gray-400 hover:text-gray-600 config-btn" title="Configure">
+                            <i class="fas fa-cog w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <div class="text-center text-red-500 py-8">
+                        <i class="fas fa-exclamation-triangle text-4xl text-red-300 mb-4"></i>
+                        <p class="mb-3">Error loading chart data</p>
+                        <p class="text-sm text-red-400">${widget.error}</p>
+                        <button class="mt-3 px-4 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors retry-btn">
+                            Retry
+                        </button>
+                    </div>
+                </div>
+                <div class="resize-handle" title="Resize">
+                    <div class="resize-handle-icon"></div>
+                </div>
+            `;
+        }
+
         if (!widget.hasData) {
+            console.log('Rendering no data state for chart widget');
             return `
                 <div class="widget-header">
                     <div class="dot-controls">
@@ -431,6 +556,7 @@ async loadStoredQuery() {
             `;
         }
 
+        console.log('Rendering data state for chart widget');
         return `
             <div class="widget-header">
                 <div class="dot-controls">
@@ -545,7 +671,7 @@ async loadStoredQuery() {
             this.setupTextHeaderEvents(element, widget);
         }
 
-        // Configuration button 
+        // Configuration button
         const configBtn = element.querySelector('.config-btn');
         if (configBtn) {
             configBtn.addEventListener('click', (e) => {
@@ -559,9 +685,10 @@ async loadStoredQuery() {
     }
 
 
- 
-async applyWidgetChanges(bottomSheet, widget) {
 
+
+
+async applyWidgetChanges(bottomSheet, widget) {
     const titleInput = bottomSheet.querySelector('.widget-title-input');
     const apiInput = bottomSheet.querySelector('.api-endpoint-input');
     const intervalInput = bottomSheet.querySelector('.refresh-interval-input');
@@ -590,179 +717,415 @@ async applyWidgetChanges(bottomSheet, widget) {
         if (intervalInput) {
             widget.refreshInterval = parseInt(intervalInput.value) * 1000;
         }
-
-        // Fetch data if API endpoint is provided
-        if (widget.apiEndpoint && widget.apiEndpoint.trim()) {
-            try {
-            await this.fetchWidgetData(widget);
-            } catch (error) {
-                console.error('Error fetching widget data:', error);
-            }
-        }
-    }
-       // Update the widget in the dashboard app's widgets array
-<<<<<<< Updated upstream
-        const widgetIndex = this.app.widgets.findIndex(w => w.id === widget.id);
-        if (widgetIndex >= 0) {
-            this.app.widgets[widgetIndex] = { ...widget };
-            console.log(" Updated widget in app.widgets array");
-        }
-    
-=======
->>>>>>> Stashed changes
-        // Update last modified timestamp
-        widget.lastUpdated = new Date();
-        if (this.app.currentDashboard) {
-            this.app.currentDashboard.lastModified = new Date();
-        }
-
-    // Send to backend (only expected fields)
-    try {
-        const payload = {
-<<<<<<< Updated upstream
-            title: widget.title || 'null',
-            selectedQuery: widget.apiEndpoint || 'null',
-            refreshInterval: widget.refreshInterval || 0,
-            fontSizeInput: widget.fontSizeInput || 12,
-            textContentInput: widget.textContentInput || 'null'
-        };
-        console.log(payload)
-        const response = await fetch(`${this.apiBaseUrl}/save-widget`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({payload})
-        });
-       const result = await response.json();
-        console.log('Backend response:', result.savedQuery);
-        if (!result.message=='Data inserted successfully') {
-=======
-            id: widget.id, // Include widget ID for update operations
-            type: widget.type, // Include widget type
-            title: widget.title || '',
-            selectedQuery: widget.apiEndpoint || '', // Backend expects selectedQuery
-            refreshInterval: widget.refreshInterval || 0,
-            fontSize: widget.fontSize || 24, // Map to fontSize
-            content: widget.content || '' // Map to content
-        };
-        //console.log("payload",payload)
-        const response = await fetch(`${this.app.localApiBaseUrl}/save-widget`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-       const result = await response.json();
-        console.log('Backend response:', result);
-        if (!response.ok) {
->>>>>>> Stashed changes
-           window.navigationManager.showNotification(result.message, 'error');
-        } 
-        else {
-            window.navigationManager.showNotification(result.message, 'success');
-        }
-         //  Saving dashboard to sync with backend
-          if (this.app && typeof this.app.saveDashboard === 'function') {
-                    console.log("Saving dashboard to sync changes...");
-                    await this.app.saveDashboard();
-            }
-
-     
-    } catch (error) {
-        //console.error('Error sending widget to backend:', error);
-        //if (window.navigationManager) {
-          //  window.navigationManager.showNotification('Error saving widget', 'error');
-       // }
-        
-         // Still save locally even if backend fails
-                if (this.app && typeof this.app.saveDashboard === 'function') {
-                    console.log("Save to Backend failed, saving locally...");
-                    await this.app.saveDashboard();
-                }
-        
-                if (window.navigationManager) {
-                    window.navigationManager.showNotification(
-                        error.message || 'Widget saved locally. Backend sync failed.', 
-                        'warning'
-                    );
-                }
     }
 
+    // Update the widget in the dashboard app's widgets array
+    const widgetIndex = this.app.widgets.findIndex(w => w.id === widget.id);
+    if (widgetIndex >= 0) {
+        this.app.widgets[widgetIndex] = { ...widget };
+        console.log("Updated widget in app.widgets array");
+    }
+
+    // Update last modified timestamp
+    widget.lastUpdated = new Date();
+    if (this.app.currentDashboard) {
+        this.app.currentDashboard.lastModified = new Date();
+    }
     this.closeBottomSheet();
-<<<<<<< Updated upstream
-    this.app.renderWidgets();
-=======
+    this.showWidgetLoading(widget);
     
-    // Add small delay to ensure data updates are complete before rendering
+    // Close the bottom sheet IMMEDIATELY after starting loading
+   
+
+    // Send to backend and process returned data
+    try {
+        // Create the payload object with correct structure
+        const payloadData = {
+            Title: widget.title || '',
+            ApiEndpoint: widget.apiEndpoint || '',
+            RefreshInterval: widget.refreshInterval || 0,
+            fontSizeInput: widget.fontSize || 0,
+            textContentInput: widget.content || ''
+        };
+
+        // Wrap it in the expected structure
+        const requestBody = {
+            payload: payloadData
+        };
+
+        console.log('Sending request body:', requestBody);
+
+        const response = await fetch('https://edge.ncgafrica.com:5000/save-widget', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+        });
+
+        // Check if response is ok first
+        if (!response.ok) {
+            // Try to get error message from response
+            let errorMessage = `Server error: ${response.status}`;
+            try {
+                const errorText = await response.text();
+                console.log('Server error response:', errorText);
+
+                // Try to parse as JSON first
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    errorMessage = errorJson.message || errorMessage;
+                } catch (parseError) {
+                    // If not JSON, use the text response
+                    errorMessage = errorText.substring(0, 200) || errorMessage;
+                }
+            } catch (textError) {
+                console.log('Could not read error response:', textError);
+            }
+
+            throw new Error(errorMessage);
+        }
+
+        // Try to parse JSON response
+        let result;
+        try {
+            const responseText = await response.text();
+            console.log('Raw response text:', responseText);
+
+            if (!responseText.trim()) {
+                throw new Error('Empty response from server');
+            }
+
+            result = JSON.parse(responseText);
+            console.log('Parsed backend response:', result);
+        } catch (parseError) {
+            console.error('Failed to parse response as JSON:', parseError);
+            throw new Error('Invalid response format from server');
+        }
+
+        // Success handling
+        if (window.navigationManager) {
+            window.navigationManager.showNotification(
+                result.message || 'Widget saved successfully',
+                'success'
+            );
+        }
+
+        // Process the returned data for non-text-header widgets
+        if (widget.type !== 'text-header' && result.savedQuery && Array.isArray(result.savedQuery)) {
+            console.log('Processing returned data:', result.savedQuery);
+
+            // Use the data processing logic to format the data correctly
+            const processedData = this.processWidgetDataFromResponse(result.savedQuery, widget.type);
+
+            if (processedData) {
+                widget.data = processedData;
+                widget.hasData = true;
+                widget.lastUpdated = new Date();
+                widget.error = null;
+                widget.isLoading = false; // Clear loading state
+
+                // Update the widget in the app's widgets array again after data processing
+                const updatedWidgetIndex = this.app.widgets.findIndex(w => w.id === widget.id);
+                if (updatedWidgetIndex >= 0) {
+                    this.app.widgets[updatedWidgetIndex] = { ...widget };
+                    console.log("Updated widget with data in app.widgets array");
+                }
+
+                console.log('Widget data updated:', {
+                    type: widget.type,
+                    dataLength: Array.isArray(processedData) ? processedData.length : 'N/A',
+                    hasData: widget.hasData
+                });
+            }
+        } else {
+            // Clear loading state even if no data
+            widget.isLoading = false;
+        }
+
+        // Saving dashboard to sync with backend
+        if (this.app && typeof this.app.saveDashboard === 'function') {
+            console.log("Saving dashboard to sync changes...");
+            await this.app.saveDashboard();
+        }
+
+    } catch (error) {
+        console.error('Error sending widget to backend:', error);
+
+        // Clear loading state on error
+        widget.isLoading = false;
+        widget.error = error.message;
+
+        // Update widget in app array
+        const errorWidgetIndex = this.app.widgets.findIndex(w => w.id === widget.id);
+        if (errorWidgetIndex >= 0) {
+            this.app.widgets[errorWidgetIndex] = { ...widget };
+        }
+
+        // Still save locally even if backend fails
+        if (this.app && typeof this.app.saveDashboard === 'function') {
+            console.log("Save to Backend failed, saving locally...");
+            await this.app.saveDashboard();
+        }
+
+        if (window.navigationManager) {
+            window.navigationManager.showNotification(
+                error.message || 'Widget saved locally. Backend sync failed.',
+                'warning'
+            );
+        }
+    }
+
+    // Force a complete re-render of all widgets
+    console.log("Force re-rendering widgets...");
+    this.app.renderWidgets();
+
+    // Additional delay to ensure DOM updates are complete before chart rendering
     setTimeout(() => {
-        this.app.renderWidgets();
+        // Render chart if it's a chart widget and has data
+        if (widget.type !== 'table' && widget.type !== 'text-header' && widget.hasData && window.chartRenderer) {
+            console.log("Rendering chart for widget:", widget.id);
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    window.chartRenderer.renderChart(widget);
+                }, 150);
+            });
+        }
     }, 100);
->>>>>>> Stashed changes
 
     if (window.navigationManager) {
         window.navigationManager.showNotification('Widget updated successfully', 'success');
     }
-<<<<<<< Updated upstream
-} 
-=======
 }
->>>>>>> Stashed changes
 
-    async fetchWidgetData(widget) {
+// Helper method to show loading state on widget
+showWidgetLoading(widget) {
+        console.log('Setting loading state for widget:', widget.id);
+        
+        widget.isLoading = true;
+        widget.error = null;
+        widget.hasData = false; // Reset data state to show loading
+
+        // Update widget in app array
+        const widgetIndex = this.app.widgets.findIndex(w => w.id === widget.id);
+        if (widgetIndex >= 0) {
+            this.app.widgets[widgetIndex] = { ...widget };
+            console.log('Updated widget in array with loading state:', this.app.widgets[widgetIndex]);
+        }
+
+        // Force re-render to show loading state
+        console.log('Force rendering widgets to show loading...');
+        this.app.renderWidgets();
+        
+        // Verify the widget element was updated
+        setTimeout(() => {
+            const widgetElement = document.querySelector(`[data-widget-id="${widget.id}"]`);
+            if (widgetElement) {
+                console.log('Widget element after loading update:', widgetElement.innerHTML.substring(0, 200));
+                const spinner = widgetElement.querySelector('.loading-spinner');
+                console.log('Spinner element found:', !!spinner);
+            } else {
+                console.log('Widget element not found in DOM');
+            }
+        }, 100);
+    }
+
+processWidgetDataFromResponse(responseData, widgetType) {
+        console.log('Processing response data for', widgetType + ':', responseData);
+
+    if (!responseData || !Array.isArray(responseData) || responseData.length === 0) {
+        console.warn('No valid data in response');
+        return null;
+    }
+
+    switch (widgetType) {
+        case 'table':
+            return this.processTableDataFromResponse(responseData);
+        case 'single-value':
+            return this.processSingleValueFromResponse(responseData);
+        case 'bar':
+        case 'line':
+        case 'pie':
+        case 'donut':
+        case 'histogram':
+        default:
+            return this.processChartDataFromResponse(responseData);
+    }
+}
+
+processTableDataFromResponse(responseData) {
+    return responseData.map(row => {
+        const cleanRow = {};
+        Object.keys(row).forEach(key => {
+            // Create clean column names - handle camelCase and various formats
+            let cleanKey = key;
+
+            // Convert camelCase to Title Case
+            if (key.includes('applicationName')) cleanKey = 'Application Name';
+            else if (key.includes('logFilePath')) cleanKey = 'Log File Path';
+            else if (key.includes('messageCollected')) cleanKey = 'Messages Collected';
+            else if (key.includes('techology')) cleanKey = 'Technology'; // Handle typo in API
+            else if (key.includes('AppName')) cleanKey = 'App Name';
+            else if (key.includes('ErrorCount')) cleanKey = 'Error Count';
+            else if (key.includes('TotalApp')) cleanKey = 'Total App';
+            else {
+                // General conversion for other fields
+                cleanKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+            }
+
+            cleanRow[cleanKey] = row[key] !== null && row[key] !== undefined ? String(row[key]) : '';
+        });
+        return cleanRow;
+    });
+}
+
+processSingleValueFromResponse(responseData) {
+    const item = responseData[0] || {};
+
+    // Look for numeric fields that could be used as single values
+    let value = 0;
+    let label = 'Total';
+
+    // Check for common numeric fields
+    const numericFields = ['messageCollected', 'TotalApp', 'ErrorCount', 'Total', 'value', 'count'];
+    const nameFields = ['AppName', 'applicationName', 'name', 'label', 'techology'];
+
+    for (const field of numericFields) {
+        if (item[field] !== undefined && !isNaN(item[field])) {
+            value = Number(item[field]);
+            break;
+        }
+    }
+
+    for (const field of nameFields) {
+        if (item[field] !== undefined) {
+            label = String(item[field]);
+            break;
+        }
+    }
+
+    // If no numeric value found, count the array length
+    if (value === 0) {
+        value = responseData.length;
+        label = 'Total Records';
+    }
+
+    return {
+        value: value,
+        label: label,
+        formatted: Number(value).toLocaleString()
+    };
+}
+
+processChartDataFromResponse(responseData) {
+    console.log('Processing chart data from response:', responseData);
+
+    const processedData = responseData.map((item, index) => {
+        // Default values
+        let name = `Item ${index + 1}`;
+        let value = 1; // Default to 1 for counting purposes
+
+        // Priority order for name fields
+        const nameFields = [
+            'AppName', 'applicationName', 'name', 'label', 'techology',
+            'transaction_type', 'product_name', 'month', 'salesperson',
+            'region', 'device_type', 'logFilePath'
+        ];
+
+        // Priority order for value fields
+        const valueFields = [
+            'messageCollected', 'TotalApp', 'ErrorCount', 'value',
+            'success_rate', 'total_sales', 'revenue', 'avg_views',
+            'avg_duration', 'count', 'Total'
+        ];
+
+        // Find the best name field
+        for (const field of nameFields) {
+            if (item[field] !== undefined && item[field] !== null && item[field] !== '') {
+                name = String(item[field]);
+                // For file paths, extract just the filename
+                if (field === 'logFilePath') {
+                    const pathParts = name.split('\\');
+                    name = pathParts[pathParts.length - 1] || name;
+                    // Remove file extension for cleaner display
+                    name = name.replace(/\.[^/.]+$/, "");
+                }
+                break;
+            }
+        }
+
+        // Find the best value field
+        for (const field of valueFields) {
+            if (item[field] !== undefined && !isNaN(item[field])) {
+                value = Number(item[field]);
+                break;
+            }
+        }
+
+        // If no numeric value found, we'll count occurrences by grouping
+        if (value === 1 && Object.keys(item).length > 0) {
+            // This means we're likely dealing with categorical data
+            // The value will represent count of this category
+            value = 1;
+        }
+
+        return {
+            name: name,
+            value: value,
+            label: name,
+            color: this.getChartColor(index)
+        };
+    });
+
+    // Group by name and sum values (for categorical data)
+    const groupedData = {};
+    processedData.forEach(item => {
+        if (groupedData[item.name]) {
+            groupedData[item.name].value += item.value;
+        } else {
+            groupedData[item.name] = { ...item };
+        }
+    });
+
+    // Convert back to array and sort
+    const finalData = Object.values(groupedData)
+        .sort((a, b) => b.value - a.value);
+
+    console.log('Processed chart data from response:', finalData);
+    return finalData;
+}
+
+getChartColor(index) {
+    const colors = ['#0D9488', '#059669', '#10B981', '#34D399', '#6EE7B7', '#A7F3D0', '#FF6B6B', '#4ECDC4'];
+    return colors[index % colors.length];
+}
+
+
+  async fetchWidgetData(widget) {
         try {
-            console.log(`📊 Fetching data for widget: ${widget.title}`);
-            
-            // Show loading state
-            widget.isLoading = true;
-            widget.error = null;
-            this.app.renderWidgets();
 
-            // Use DataManager to fetch data from the correct endpoint
-            const options = {
-                queryTitle: widget.apiEndpoint,
-                widgetType: widget.type,
-                apiBaseUrl: this.app.edgeApiBaseUrl,
-                dataType: widget.type === 'table' ? 'table' : 'chart'
-            };
-            
-            // Use DataManager to fetch data from /api/query-data endpoint
-            const apiData = await window.dataManager.fetchData(null, options);
-            
-            if (apiData && Array.isArray(apiData)) {
-                // Process the data directly (DataManager returns the data array)
-                const processedData = this.processApiData(apiData, widget.type);
-                
+            const response = await fetch(widget.apiEndpoint);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (window.dataManager) {
+                const processedData = window.dataManager.processData(data, widget.type === 'table' ? 'table' : 'chart');
                 widget.data = processedData;
                 widget.hasData = true;
-                widget.isLoading = false;
                 widget.lastUpdated = new Date();
-                widget.error = null;
 
                 // Setup auto-refresh if interval is set
-                if (widget.refreshInterval > 0 && window.dataManager) {
-                    window.dataManager.setupAutoRefresh(widget.id, options, widget.refreshInterval, async () => {
-                        try {
-                            await this.fetchWidgetData(widget);
-                        } catch (error) {
-                            console.error('Auto-refresh failed:', error);
-                        }
+                if (widget.refreshInterval > 0) {
+                    window.dataManager.setupAutoRefresh(widget.id, widget.apiEndpoint, widget.refreshInterval, (newData) => {
+                        widget.data = window.dataManager.processData(newData, widget.type === 'table' ? 'table' : 'chart');
+                        widget.lastUpdated = new Date();
+                        this.app.renderWidgets();
                     });
                 }
-
-                // Re-render the widget with new data
-                this.app.renderWidgets();
-                
-                if (window.navigationManager) {
-                    window.navigationManager.showNotification('Data loaded successfully', 'success');
-                }
-            } else {
-                throw new Error('No data received from API');
             }
         } catch (error) {
-            console.error('❌ Error fetching widget data:', error);
-            widget.isLoading = false;
-            widget.hasData = false;
-            widget.error = error.message;
-            this.app.renderWidgets();
-
+            console.error('Error fetching widget data:', error);
             if (window.navigationManager) {
                 window.navigationManager.showNotification('Failed to fetch data from API', 'error');
             }
@@ -771,24 +1134,24 @@ async applyWidgetChanges(bottomSheet, widget) {
 
     // Add data processing methods
     processApiData(rawData, widgetType) {
-        console.log(`🔄 Processing API data for ${widgetType}:`, rawData);
-        
-        if (!Array.isArray(rawData) || rawData.length === 0) {
+        console.log('Processing API data for', widgetType + ':', rawData);
+
+        if (!rawData || !Array.isArray(rawData.data) || rawData.data.length === 0) {
             throw new Error('No data to process');
         }
 
         switch (widgetType) {
             case 'table':
-                return this.processTableData(rawData);
+                return this.processTableData(rawData.data);
             case 'single-value':
-                return this.processSingleValue(rawData);
+                return this.processSingleValue(rawData.data);
             case 'bar':
             case 'line':
             case 'pie':
             case 'donut':
             case 'histogram':
             default:
-                return this.processChartData(rawData);
+                return this.processChartData(rawData.data);
         }
     }
 
@@ -804,12 +1167,12 @@ async applyWidgetChanges(bottomSheet, widget) {
     }
 
     processSingleValue(rawData) {
-        const item = rawData[0];
-        
+        const item = rawData && Array.isArray(rawData) && rawData.length > 0 ? rawData[0] : {};
+
         // Look for total/count fields in your data
         let value = item.TotalApp || item.messageCollected || item.ErrorCount || item.Total || 0;
         let label = item.AppName || 'Total Value';
-        
+
         return {
             value: value,
             label: label,
@@ -818,23 +1181,58 @@ async applyWidgetChanges(bottomSheet, widget) {
     }
 
     processChartData(rawData) {
-        console.log(`📊 Processing chart data:`, rawData);
-        
+        console.log('Processing chart data:', rawData);
+
         const processedData = rawData.map((item, index) => {
-            // Use AppName as the label and messageCollected as the value
-            const name = item.AppName || item.name || `Item ${index + 1}`;
-            const value = item.messageCollected || item.TotalApp || item.ErrorCount || item.value || 0;
-            
+            let name = item.name || `Item ${index + 1}`;
+            let value = item.value || 0;
+
+            // Prioritize specific keys for common chart data
+            if (item.transaction_type !== undefined) {
+                name = item.transaction_type;
+            } else if (item.AppName !== undefined) {
+                name = item.AppName;
+            } else if (item.product_name !== undefined) {
+                name = item.product_name;
+            } else if (item.month !== undefined) {
+                name = item.month;
+            } else if (item.salesperson !== undefined) {
+                name = item.salesperson;
+            } else if (item.region !== undefined) {
+                name = item.region;
+            } else if (item.device_type !== undefined) {
+                name = item.device_type;
+            }
+
+            if (item.success_rate !== undefined) {
+                value = item.success_rate;
+            } else if (item.messageCollected !== undefined) {
+                value = item.messageCollected;
+            } else if (item.TotalApp !== undefined) {
+                value = item.TotalApp;
+            } else if (item.ErrorCount !== undefined) {
+                value = item.ErrorCount;
+            } else if (item.total_sales !== undefined) {
+                value = item.total_sales;
+            } else if (item.revenue !== undefined) {
+                value = item.revenue;
+            } else if (item.avg_views !== undefined) {
+                value = item.avg_views;
+            } else if (item.avg_duration !== undefined) {
+                value = item.avg_duration;
+            }
+
             return {
                 name: name,
                 value: Number(value),
                 label: name,
                 color: this.getChartColor(index)
             };
-        }).filter(item => item.value > 0) // Remove zero values
-          .sort((a, b) => b.value - a.value); // Sort by value descending
-        
-        console.log(`✅ Processed chart data:`, processedData);
+        })
+        // Removed .filter(item => item.value > 0) to allow zero values to be processed
+        .sort((a, b) => b.value - a.value); // Sort by value descending
+
+        console.log('Processed chart data:', processedData);
         return processedData;
     }
 
@@ -847,7 +1245,7 @@ async applyWidgetChanges(bottomSheet, widget) {
         const widget = this.app.widgets.find(w => w.id === widgetId);
         if (!widget) return;
 
-        console.log(`🎭 Loading sample data for ${widgetType} widget: ${widget.title}`);
+        console.log('Loading sample data for', widgetType, 'widget:', widget.title);
 
         // Generate sample data based on widget type
         let sampleData;
@@ -861,8 +1259,8 @@ async applyWidgetChanges(bottomSheet, widget) {
                 { AppName: 'Authentication', messageCollected: 298, ErrorCount: 3 }
             ];
         } else if (widgetType === 'single-value') {
-            sampleData = { 
-                value: 3672, 
+            sampleData = {
+                value: 3672,
                 label: 'Total Messages',
                 formatted: '3,672'
             };
@@ -875,7 +1273,7 @@ async applyWidgetChanges(bottomSheet, widget) {
                 { AppName: 'API Gateway', messageCollected: 423 },
                 { AppName: 'Authentication', messageCollected: 298 }
             ];
-            
+
             // Process using the same logic as real data
             sampleData = this.processChartData(rawSampleData);
         }

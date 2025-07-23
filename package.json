@@ -6,15 +6,14 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
-    "serve": "node server.js",
-    "api": "node api/app.js"
+    "serve": "node server.js"
   },
   "dependencies": {
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
-    "mssql": "^9.0.1",  // Use ^11.0.1 for live server if ArrayBuffer issues are resolved
+    "mssql": "^11.0.1",
     "spdy": "^4.0.2"
   }
 }
