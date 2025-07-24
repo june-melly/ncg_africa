@@ -32,25 +32,37 @@ export class DashboardApp {
     }
 
     async loadScreenModules() {
+       
         try {
+            if (window.darkModeManager) {
+            const { DarkModeManager } = await import('../utils/DarkModeManager.js');
+            window.darkModeManager = new DarkModeManager();
+            }
+
+            
             const { DashboardHomeScreen } = await import('../screens/DashboardHomeScreen.js');
             const { DashboardBuilderScreen } = await import('../screens/DashboardBuilderScreen.js');
             const { TransactionMonitoringScreen } = await import('../screens/TransactionMonitoringScreen.js');
+            const { TransactionDetailsScreen } = await import('../screens/TransactionDetailsScreen.js');
 
             this.screens.dashboard = new DashboardHomeScreen(this);
             this.screens.builder = new DashboardBuilderScreen(this);
             this.screens.transaction = new TransactionMonitoringScreen(this);
+            this.screens.transactionDetails = new TransactionDetailsScreen(this);
+
 
             // Make screens globally available for cross-screen communication
             window.dashboardHomeScreen = this.screens.dashboard;
             window.dashboardBuilderScreen = this.screens.builder;
             window.transactionMonitoringScreen = this.screens.transaction;
+            window.transactionDetailsScreen = this.screens.transactionDetails;
 
 
             // Initialize screens
             this.screens.dashboard.init();
             this.screens.builder.init();
             this.screens.transaction.init();
+            this.screens.transactionDetails.init();
         } catch (error) {
             console.error('Failed to load screen modules:', error);
             if (!this.screens.transaction) {

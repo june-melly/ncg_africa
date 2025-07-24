@@ -956,87 +956,74 @@ export class TransactionMonitoringScreen {
         this.attachContentEventListeners();
     }
 
-    attachContentEventListeners() {
-        const detailButtons = document.querySelectorAll('.view-details-btn');
-        detailButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const cardId = e.currentTarget.dataset.cardId;
-                this.showTransactionDetails(cardId);
-            });
+   attachContentEventListeners() {
+    const detailButtons = document.querySelectorAll('.view-details-btn');
+    detailButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const cardId = e.currentTarget.dataset.cardId;
+            console.log('Opening details for:', cardId);
+            
+            // This will now open the full-screen details
+            this.showTransactionDetails(cardId);
         });
+    });
+}
+
+   showTransactionDetails(cardId) {
+    const transaction = this.transactionData.find(t => t.id === cardId);
+    if (!transaction) {
+        console.error('Transaction not found:', cardId);
+        return;
     }
 
-    showTransactionDetails(cardId) {
-         const transaction = this.transactionData.find(t => t.id === cardId);
-         if (!transaction) {
-             console.error('Transaction not found:', cardId);
-             return;
-         }
+    // Get the transaction type (USSD, SMS, API)
+    const transactionType = transaction.type;
+    
+    // Use the new TransactionDetailsScreen
+    if (window.transactionDetailsScreen) {
+        // Hide current monitoring screen
+        this.hide();
+        
+        // Show detailed screen
+        window.transactionDetailsScreen.show(transactionType);
+    } else {
+        // Fallback to modal if details screen not available
+        this.showTransactionDetailsModal(transaction);
+    }
+}
 
-        if (window.navigationManager) {
-            const detailsContent = `
-                <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Transaction Type</label>
-                            <div class="text-lg font-semibold">${transaction.type}</div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Total Volume</label>
-                            <div class="text-lg font-semibold">${transaction.totalTransactions.toLocaleString()}</div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Success Rate</label>
-                            <div class="text-lg font-semibold text-green-600">${((transaction.success.count / transaction.totalTransactions) * 100 || 0).toFixed(1)}%</div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Failure Rate</label>
-                            <div class="text-lg font-semibold text-red-600">${((transaction.failure.count / transaction.totalTransactions) * 100 || 0).toFixed(1)}%</div>
-                        </div>
-                    </div>
-
+// 3. ADD: Fallback modal method (keep your existing one as backup)
+showTransactionDetailsModal(transaction) {
+    if (window.navigationManager) {
+        const detailsContent = `
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Error Breakdown</label>
-                        <div class="space-y-2">
-                            <div class="flex justify-between">
-                                <span>Internal Errors:</span>
-                                <span class="font-semibold">${transaction.failureBreakdown.internal}%</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span>External Errors:</span>
-                                <span class="font-semibold">${transaction.failureBreakdown.external}%</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span>User Errors:</span>
-                                <span class="font-semibold">${transaction.failureBreakdown.users}%</span>
-                            </div>
-                        </div>
+                        <label class="block text-sm font-medium text-gray-700">Transaction Type</label>
+                        <div class="text-lg font-semibold">${transaction.type}</div>
                     </div>
-
-                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <div class="flex items-center gap-2">
-                            <i class="fas fa-exclamation-triangle text-red-600"></i>
-                            <span class="font-medium text-red-800">Current Error Streak</span>
-                        </div>
-                        <p class="text-red-700 mt-1">${transaction.errorStreak} continuous errors detected</p>
-                        <p class="text-sm text-red-600 mt-1">Last Error: ${transaction.lastError}</p>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Total Volume</label>
+                        <div class="text-lg font-semibold">${transaction.totalTransactions.toLocaleString()}</div>
                     </div>
                 </div>
-            `;
+                <!-- Add more details as needed -->
+            </div>
+        `;
 
-            window.navigationManager.showModal(
-                `Details for ${transaction.type}`,
-                detailsContent,
-                [
-                    { label: 'Export Report', action: 'export' },
-                    { label: 'Close', action: 'close', primary: true, handler: () => true }
-                ]
-            );
-        }
+        window.navigationManager.showModal(
+            `Details for ${transaction.type}`,
+            detailsContent,
+            [
+                { label: 'Close', action: 'close', primary: true, handler: () => true }
+            ]
+        );
     }
+}
+
 
     render() {
         return `
@@ -1204,6 +1191,7 @@ export class TransactionMonitoringScreen {
             }, 500);
         }
     }
+    
 
     hide() {
         const screen = document.getElementById('transactionScreen');
