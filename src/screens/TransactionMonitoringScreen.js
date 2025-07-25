@@ -1,4 +1,4 @@
-// Transaction Monitoring Screen - Fixed Version
+// Transaction Monitoring Screen - Design Match Version
 export class TransactionMonitoringScreen {
     constructor(app) {
         this.app = app;
@@ -10,6 +10,11 @@ export class TransactionMonitoringScreen {
         this.isLoading = false;
         this.error = null;
         this.alertMessage = '';
+        this.darkModeManager = null;
+        this.darkModeCleanup = null;
+
+        // Fixed channel names (5 channels constant)
+        this.channelNames = ['USSD', 'SMS', 'API', 'POS', 'Mobile'];
 
         // User and notification data
         this.userData = {
@@ -33,11 +38,43 @@ export class TransactionMonitoringScreen {
         if (this.isInitialized) return;
 
         try {
+            this.setupDarkModeIntegration();
             this.isInitialized = true;
             console.log('TransactionMonitoringScreen initialized');
         } catch (error) {
             console.error('Failed to initialize TransactionMonitoringScreen:', error);
         }
+    }
+
+    setupDarkModeIntegration() {
+        this.darkModeManager = window.darkModeManager || {
+            isDarkMode: false,
+            toggleDarkMode: () => {
+                this.darkModeManager.isDarkMode = !this.darkModeManager.isDarkMode;
+                document.documentElement.classList.toggle('dark', this.darkModeManager.isDarkMode);
+                if (this.themeChangeCallback) {
+                    this.themeChangeCallback(this.darkModeManager.isDarkMode);
+                }
+            },
+            onThemeChange: (callback) => {
+                this.themeChangeCallback = callback;
+                return () => { this.themeChangeCallback = null; };
+            }
+        };
+
+        this.darkModeCleanup = this.darkModeManager.onThemeChange((isDark) => {
+            this.handleThemeChange(isDark);
+        });
+    }
+
+    handleThemeChange(isDark) {
+        console.log(`Theme updated to ${isDark ? 'dark' : 'light'}`);
+        // Force UI refresh to apply dark mode classes
+        if (this.charts && this.charts.length > 0) {
+            this.charts.forEach(chart => chart.update('none'));
+        }
+        // Re-render content to apply dark mode classes to cards
+        this.renderContent();
     }
 
     // Get default date range (last 30 days)
@@ -57,8 +94,32 @@ export class TransactionMonitoringScreen {
         return `${formatDate(startDate)} - ${formatDate(endDate)}`;
     }
 
+    // Mock data for fallback - Updated to use fixed channel names
+    getMockData() {
+        return this.channelNames.map((channelName, index) => ({
+            id: `txn-${index + 1}`,
+            type: channelName,
+            totalTransactions: 4000,
+            success: { 
+                count: 3600, 
+                percentage: 90 
+            },
+            failure: { 
+                count: 400, 
+                percentage: 10 
+            },
+            lastError: '2025-07-10 10:43',
+            failureBreakdown: {
+                internal: 50,
+                external: 35,
+                users: 15
+            },
+            errorStreak: 3
+        }));
+    }
+
     // Load user profile data
-    async loadUserData() {
+      async loadUserData() {
         try {
             console.log('Loading user data from backend...');
 
@@ -91,7 +152,9 @@ export class TransactionMonitoringScreen {
                 role: 'Super Administrator',
                 avatar: null
             };
-        }
+            this.updateUserHeader();
+        } 
+        
     }
 
     // Load notifications count
@@ -127,6 +190,8 @@ export class TransactionMonitoringScreen {
 
                 this.updateNotificationBadge();
             }
+            this.notificationCount = 0; // No notification badge shown in design
+            this.updateNotificationBadge();
         } catch (error) {
             console.error('Error loading notifications:', error);
             this.notificationCount = 88; // Default fallback for demo
@@ -134,7 +199,7 @@ export class TransactionMonitoringScreen {
     }
 
     // Load alerts from backend
-    async loadAlerts() {
+     async loadAlerts() {
         try {
             console.log('Loading alerts from backend...');
 
@@ -161,12 +226,15 @@ export class TransactionMonitoringScreen {
 
                 this.updateAlertDisplay();
             }
+            this.showAlert = true;
+            this.alertMessage = 'Critical: Channel 5 failure rate is 40%';
+            this.updateAlertDisplay();
         } catch (error) {
             console.error('Error loading alerts:', error);
         }
     }
 
-    // Load transaction data with date range
+    // Load transaction data 
     async loadTransactionData(startDate = null, endDate = null) {
         this.isLoading = true;
         this.error = null;
@@ -206,6 +274,8 @@ export class TransactionMonitoringScreen {
                 throw new Error('Invalid data format received from backend');
             }
 
+            // Use mock data for demo
+            this.transactionData = this.getMockData();
             this.isLoading = false;
             return this.transactionData;
 
@@ -256,62 +326,14 @@ export class TransactionMonitoringScreen {
         } catch (error) {
             console.error('Error loading cached data:', error);
             this.transactionData = this.getMockData();
+            return this.transactionData;
         }
-    }
-
-    // Mock data for fallback
-    getMockData() {
-        return [
-            {
-                id: 'txn-1',
-                type: 'USSD',
-                totalTransactions: 4000,
-                success: { count: 3600, percentage: 90 },
-                failure: { count: 400, percentage: 10 },
-                lastError: '2025 - 07 - 10  10:43',
-                failureBreakdown: {
-                    internal: 50,
-                    external: 35,
-                    users: 15
-                },
-                errorStreak: 3
-            },
-            {
-                id: 'txn-2',
-                type: 'SMS',
-                totalTransactions: 1500,
-                success: { count: 1450, percentage: 97 },
-                failure: { count: 50, percentage: 3 },
-                lastError: '2025 - 07 - 09  14:20',
-                failureBreakdown: {
-                    internal: 10,
-                    external: 20,
-                    users: 70
-                },
-                errorStreak: 0
-            },
-            {
-                id: 'txn-3',
-                type: 'API',
-                totalTransactions: 8000,
-                success: { count: 7800, percentage: 97.5 },
-                failure: { count: 200, percentage: 2.5 },
-                lastError: '2025 - 07 - 10  09:00',
-                failureBreakdown: {
-                    internal: 80,
-                    external: 10,
-                    users: 10
-                },
-                errorStreak: 1
-            }
-        ];
     }
 
     // Update user header in the UI
     updateUserHeader() {
         const userNameElement = document.querySelector('.user-name');
         const userRoleElement = document.querySelector('.user-role');
-        const userAvatarElement = document.querySelector('.user-avatar');
 
         if (userNameElement) {
             userNameElement.textContent = this.userData.name;
@@ -319,10 +341,6 @@ export class TransactionMonitoringScreen {
 
         if (userRoleElement) {
             userRoleElement.textContent = this.userData.role;
-        }
-
-        if (userAvatarElement && this.userData.avatar) {
-            userAvatarElement.innerHTML = `<img src="${this.userData.avatar}" alt="${this.userData.name}" class="w-8 h-8 rounded-full object-cover">`;
         }
     }
 
@@ -357,8 +375,6 @@ export class TransactionMonitoringScreen {
     async refreshData() {
         console.log('Refreshing transaction data...');
 
-        this.showLoadingState();
-
         await Promise.all([
             this.loadUserData(),
             this.loadNotifications(),
@@ -366,7 +382,6 @@ export class TransactionMonitoringScreen {
             this.loadAlerts()
         ]);
 
-        this.cacheTransactionData();
         this.renderContent();
 
         if (window.navigationManager) {
@@ -374,7 +389,7 @@ export class TransactionMonitoringScreen {
         }
     }
 
-    // Show loading state in UI
+        // Show loading state in UI
     showLoadingState() {
         const contentContainer = document.getElementById('transactionContent');
         if (contentContainer) {
@@ -411,6 +426,7 @@ export class TransactionMonitoringScreen {
             `;
         }
     }
+
 
     setupEventListeners() {
         // View toggle buttons
@@ -449,7 +465,7 @@ export class TransactionMonitoringScreen {
             });
         }
 
-        // Refresh button
+           // Refresh button
         const refreshBtn = document.querySelector('.refresh-btn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', async () => {
@@ -474,17 +490,14 @@ export class TransactionMonitoringScreen {
 
         // Update button states
         document.querySelectorAll('.view-toggle-btn').forEach(btn => {
-            btn.classList.remove('active', 'bg-white', 'text-gray-900', 'shadow-sm');
-            btn.classList.add('text-gray-600', 'hover:text-gray-900');
+            btn.classList.remove('active', 'bg-white', 'text-gray-900', 'shadow-sm', 'dark:bg-dark-700', 'dark:text-white');
+            btn.classList.add('text-gray-600', 'hover:text-gray-900', 'dark:text-dark-300', 'dark:hover:text-white');
         });
 
         const activeBtn = document.querySelector(`[data-view="${view}"]`);
         if (activeBtn) {
-            activeBtn.classList.add('active', 'bg-white', 'text-gray-900', 'shadow-sm');
-            activeBtn.classList.remove('text-gray-600', 'hover:text-gray-900');
-            console.log('Active button updated for view:', view);
-        } else {
-            console.error('Button not found for view:', view);
+            activeBtn.classList.add('active', 'bg-white', 'text-gray-900', 'shadow-sm', 'dark:bg-dark-700', 'dark:text-white');
+            activeBtn.classList.remove('text-gray-600', 'hover:text-gray-900', 'dark:text-dark-300', 'dark:hover:text-white');
         }
 
         this.renderContent();
@@ -503,27 +516,11 @@ export class TransactionMonitoringScreen {
             const filterContent = `
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Transaction Type</label>
-                        <select id="filterTransactionType" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Transaction Type</label>
+                        <select id="filterTransactionType" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
                             <option value="">All Types</option>
-                            <option value="USSD">USSD</option>
-                            <option value="SMS">SMS</option>
-                            <option value="API">API</option>
+                            ${this.channelNames.map(name => `<option value="${name}">${name}</option>`).join('')}
                         </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                        <select id="filterStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md">
-                            <option value="">All Status</option>
-                            <option value="success">Success</option>
-                            <option value="failed">Failed</option>
-                            <option value="pending">Pending</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Error Threshold (%)</label>
-                        <input type="number" id="filterErrorThreshold" placeholder="Enter percentage" min="0" max="100"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md">
                     </div>
                 </div>
             `;
@@ -532,19 +529,8 @@ export class TransactionMonitoringScreen {
                 'Filter Transactions',
                 filterContent,
                 [
-                    { label: 'Clear Filters', action: 'clear', handler: () => {
-                        this.clearFilters();
-                        return true;
-                    }},
-                    { label: 'Apply Filter', action: 'apply', primary: true, handler: () => {
-                        const filters = {
-                            type: document.getElementById('filterTransactionType')?.value || '',
-                            status: document.getElementById('filterStatus')?.value || '',
-                            errorThreshold: document.getElementById('filterErrorThreshold')?.value || ''
-                        };
-                        this.applyFilters(filters);
-                        return true;
-                    }}
+                    { label: 'Clear Filters', action: 'clear', handler: () => true },
+                    { label: 'Apply Filter', action: 'apply', primary: true, handler: () => true }
                 ]
             );
         }
@@ -607,218 +593,110 @@ export class TransactionMonitoringScreen {
         }
     }
 
+
     showDateRangePicker() {
         if (window.navigationManager) {
-            const today = new Date();
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-            const formatDateInput = (date) => {
-                return date.toISOString().split('T')[0];
-            };
-
-            const modalContent = `
-                <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-                            <input type="date" id="startDateInput" value="${formatDateInput(thirtyDaysAgo)}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-                            <input type="date" id="endDateInput" value="${formatDateInput(today)}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500">
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Quick Select</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button type="button" class="quick-range-btn px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50" data-days="7">
-                                Last 7 days
-                            </button>
-                            <button type="button" class="quick-range-btn px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50" data-days="30">
-                                Last 30 days
-                            </button>
-                            <button type="button" class="quick-range-btn px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50" data-days="90">
-                                Last 90 days
-                            </button>
-                            <button type="button" class="quick-range-btn px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50" data-days="365">
-                                Last year
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            window.navigationManager.showModal(
-                'Select Date Range',
-                modalContent,
-                [
-                    { label: 'Cancel', action: 'cancel' },
-                    { label: 'Apply Range', action: 'apply', primary: true, handler: () => {
-                        const startDateInput = document.getElementById('startDateInput');
-                        const endDateInput = document.getElementById('endDateInput');
-
-                        if (startDateInput && endDateInput) {
-                            const startDate = startDateInput.value;
-                            const endDate = endDateInput.value;
-
-                            if (startDate && endDate) {
-                                this.applyDateRange(startDate, endDate);
-                                return true;
-                            } else {
-                                window.navigationManager.showNotification('Please select both start and end dates', 'warning');
-                                return false;
-                            }
-                        }
-                        return false;
-                    }}
-                ]
-            );
-
-            // Add event listeners for quick select buttons
-            setTimeout(() => {
-                document.querySelectorAll('.quick-range-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const days = parseInt(e.target.dataset.days);
-                        const endDate = new Date();
-                        const startDate = new Date();
-                        startDate.setDate(startDate.getDate() - days);
-
-                        document.getElementById('startDateInput').value = formatDateInput(startDate);
-                        document.getElementById('endDateInput').value = formatDateInput(endDate);
-                    });
-                });
-            }, 100);
+            window.navigationManager.showNotification('Date range picker coming soon', 'info');
         }
     }
 
-    // Apply selected date range
-    async applyDateRange(startDate, endDate) {
-        console.log('Applying date range:', startDate, 'to', endDate);
-
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-
-        const formatDisplayDate = (date) => {
-            return date.toLocaleDateString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric'
-            });
-        };
-
-        this.dateRange = `${formatDisplayDate(start)} - ${formatDisplayDate(end)}`;
-
-        const dateRangeElement = document.querySelector('.date-range-display');
-        if (dateRangeElement) {
-            dateRangeElement.textContent = this.dateRange;
-        }
-
-        this.showLoadingState();
-        await this.loadTransactionData(startDate, endDate);
-        this.renderContent();
-
-        if (window.navigationManager) {
-            window.navigationManager.showNotification('Date range updated successfully', 'success');
-        }
-    }
-
-    showNotifications() {
-        if (window.navigationManager) {
-            window.navigationManager.showNotification('Notifications panel coming soon', 'info');
-        }
-    }
-
+    // Updated createTransactionCard to match the exact design
     createTransactionCard(transaction) {
         const data = transaction;
         const successPercentage = (data.success.count / data.totalTransactions) * 100 || 0;
         const failurePercentage = (data.failure.count / data.totalTransactions) * 100 || 0;
 
         return `
-            <div class="transaction-card bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+            <div class="transaction-card bg-white dark:bg-dark-800 rounded-lg border border-gray-200 dark:border-dark-700 p-6 shadow-sm hover:shadow-md dark:hover:shadow-lg transition-all duration-300">
+                <!-- Header with channel name and last error -->
                 <div class="flex justify-between items-start mb-4">
-                    <h3 class="text-lg font-semibold text-gray-900">${data.type}</h3>
-                    <span class="text-sm text-gray-500">Last Error : ${data.lastError}</span>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${data.type}</h3>
                 </div>
 
+                <!-- Total transactions -->
                 <div class="mb-4">
-                    <div class="text-sm text-gray-600 mb-1">Total Transactions</div>
-                    <div class="text-3xl font-bold text-gray-900 mb-2">${data.totalTransactions.toLocaleString()}</div>
+                <div class="flex justify-between items-start mb-4">
+                    <div class="text-sm text-gray-600 dark:text-dark-400 mb-1">Total Transactions</div>
+                    <span class="text-sm text-gray-500 dark:text-dark-400">Last Error: ${data.lastError}</span>
+                </div>
+                    <div class="text-2xl font-bold text-gray-900 dark:text-white mb-3">${data.totalTransactions.toLocaleString()}</div>
 
-                    <div class="flex items-center gap-6 text-sm">
-                        <div class="flex items-center gap-1">
-                            <span class="text-gray-600">Success</span>
-                            <span class="text-green-600 flex items-center gap-1">
+                    <!-- Success and Failure rates -->
+                    <div class="flex items-center gap-6">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-600 dark:text-dark-400">Success</span>
+                            <span class="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
                                 <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
                                 </svg>
-                                ${successPercentage.toFixed(1)}%
+                                ${successPercentage.toFixed(0)}%
                             </span>
                         </div>
-                        <div class="flex items-center gap-1">
-                            <span class="text-gray-600">Failure</span>
-                            <span class="text-red-600 flex items-center gap-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-600 dark:text-dark-400">Failure</span>
+                            <span class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
                                 <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                                 </svg>
-                                ${failurePercentage.toFixed(1)}%
+                                ${failurePercentage.toFixed(0)}%
                             </span>
                         </div>
                     </div>
                 </div>
 
+                <!-- Failure Breakdown Section -->
                 <div class="mb-4">
-                    <h4 class="text-sm font-semibold text-gray-900 mb-3">Failure Break Down</h4>
+                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Failure Break Down</h4>
 
                     <!-- Progress bar -->
-                    <div class="w-full bg-gray-200 rounded-full h-2 mb-3">
+                    <div class="w-full bg-gray-100 dark:bg-dark-600 rounded-full h-2 mb-3">
                         <div class="h-2 rounded-full flex">
-                            <div class="bg-yellow-400 rounded-l-full" style="width: ${data.failureBreakdown.internal}%"></div>
-                            <div class="bg-green-400" style="width: ${data.failureBreakdown.external}%"></div>
-                            <div class="bg-red-400 rounded-r-full" style="width: ${data.failureBreakdown.users}%"></div>
+                            <div class="bg-yellow-400 dark:bg-yellow-500 rounded-l-full" style="width: ${data.failureBreakdown.internal}%"></div>
+                            <div class="bg-green-400 dark:bg-green-500" style="width: ${data.failureBreakdown.external}%"></div>
+                            <div class="bg-red-400 dark:bg-red-500 rounded-r-full" style="width: ${data.failureBreakdown.users}%"></div>
                         </div>
                     </div>
 
                     <!-- Legend -->
-                    <div class="flex justify-between text-sm">
+                    <div class="flex justify-between items-center text-sm">
                         <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                            <span class="text-gray-600">Internal</span>
-                            <span class="font-semibold">${data.failureBreakdown.internal}%</span>
+                            <div class="w-3 h-3 bg-yellow-400 dark:bg-yellow-500 rounded-full"></div>
+                            <span class="text-gray-600 dark:text-dark-400">Internal</span>
+                            <span class="font-semibold text-gray-900 dark:text-white">${data.failureBreakdown.internal}%</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 bg-green-400 rounded-full"></div>
-                            <span class="text-gray-600">External</span>
-                            <span class="font-semibold">${data.failureBreakdown.external}%</span>
+                            <div class="w-3 h-3 bg-green-400 dark:bg-green-500 rounded-full"></div>
+                            <span class="text-gray-600 dark:text-dark-400">External</span>
+                            <span class="font-semibold text-gray-900 dark:text-white">${data.failureBreakdown.external}%</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 bg-red-400 rounded-full"></div>
-                            <span class="text-gray-600">Users</span>
-                            <span class="font-semibold">${data.failureBreakdown.users}%</span>
+                            <div class="w-3 h-3 bg-red-400 dark:bg-red-500 rounded-full"></div>
+                            <span class="text-gray-600 dark:text-dark-400">Users</span>
+                            <span class="font-semibold text-gray-900 dark:text-white">${data.failureBreakdown.users}%</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="flex justify-between items-center pt-4 border-t border-gray-100">
-                    <div class="flex items-center gap-2 text-sm">
-                        <span class="text-gray-600">Error Streak</span>
-                        <span class="text-red-600 flex items-center gap-1">
+                <!-- Footer with error streak and details button -->
+                <div class="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-dark-700">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-gray-600 dark:text-dark-400">Error Streak</span>
+                        <span class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
                             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                             </svg>
                             ${data.errorStreak} continuous Error
                         </span>
                     </div>
-                    <button class="view-details-btn text-blue-600 hover:text-blue-700 text-sm font-medium" data-card-id="${data.id}">
+                    <button class="view-details-btn text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium transition-colors" data-card-id="${data.id}">
                         View More Details
                     </button>
                 </div>
             </div>
         `;
     }
+
+
 
     renderGridView() {
         return `
@@ -830,58 +708,28 @@ export class TransactionMonitoringScreen {
 
     renderListView() {
         return `
-            <div class="bg-white rounded-lg border border-gray-200 overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
+            <div class="bg-white dark:bg-dark-800 rounded-lg border border-gray-200 dark:border-dark-700 overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-dark-700">
+                    <thead class="bg-gray-50 dark:bg-dark-900">
                         <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Type
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Total Transactions
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Success Rate
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Failure Rate
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Last Error
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Error Streak
-                            </th>
-                             <th scope="col" class="relative px-6 py-3">
-                                <span class="sr-only">Details</span>
-                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-400 uppercase tracking-wider">Type</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-400 uppercase tracking-wider">Total Transactions</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-400 uppercase tracking-wider">Success Rate</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-400 uppercase tracking-wider">Failure Rate</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-400 uppercase tracking-wider">Error Streak</th>
+                            <th scope="col" class="relative px-6 py-3"><span class="sr-only">Details</span></th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
+                    <tbody class="bg-white dark:bg-dark-800 divide-y divide-gray-200 dark:divide-dark-700">
                         ${this.transactionData.map(transaction => `
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    ${transaction.type}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    ${transaction.totalTransactions.toLocaleString()}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                                    ${((transaction.success.count / transaction.totalTransactions) * 100 || 0).toFixed(1)}%
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600">
-                                     ${((transaction.failure.count / transaction.totalTransactions) * 100 || 0).toFixed(1)}%
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    ${transaction.lastError}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600">
-                                    ${transaction.errorStreak}
-                                </td>
-                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <button class="view-details-btn text-blue-600 hover:text-blue-900" data-card-id="${transaction.id}">
-                                        Details
-                                    </button>
+                            <tr class="hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${transaction.type}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-dark-400">${transaction.totalTransactions.toLocaleString()}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 dark:text-green-400">${((transaction.success.count / transaction.totalTransactions) * 100 || 0).toFixed(1)}%</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600 dark:text-red-400">${((transaction.failure.count / transaction.totalTransactions) * 100 || 0).toFixed(1)}%</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600 dark:text-red-400">${transaction.errorStreak}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button class="view-details-btn text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 transition-colors" data-card-id="${transaction.id}">Details</button>
                                 </td>
                             </tr>
                         `).join('')}
@@ -893,27 +741,18 @@ export class TransactionMonitoringScreen {
 
     renderColumnView() {
         return `
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 ${this.transactionData.map(transaction => `
-                    <div class="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">${transaction.type}</h3>
-                        <div class="space-y-3 text-sm text-gray-700">
-                            <p><strong>Total:</strong> ${transaction.totalTransactions.toLocaleString()}</p>
-                            <p class="text-green-600"><strong>Success:</strong> ${((transaction.success.count / transaction.totalTransactions) * 100 || 0).toFixed(1)}%</p>
-                            <p class="text-red-600"><strong>Failure:</strong> ${((transaction.failure.count / transaction.totalTransactions) * 100 || 0).toFixed(1)}%</p>
-                            <p><strong>Last Error:</strong> ${transaction.lastError}</p>
-                            <p class="text-red-600"><strong>Error Streak:</strong> ${transaction.errorStreak}</p>
-                            <div class="pt-3 border-t border-gray-100">
-                                <h4 class="font-semibold text-gray-900 mb-2">Breakdown:</h4>
-                                <p class="text-yellow-600">Internal: ${transaction.failureBreakdown.internal}%</p>
-                                <p class="text-green-600">External: ${transaction.failureBreakdown.external}%</p>
-                                <p class="text-red-600">User: ${transaction.failureBreakdown.users}%</p>
-                            </div>
+                    <div class="bg-white dark:bg-dark-800 rounded-lg border border-gray-200 dark:border-dark-700 p-4 shadow-sm">
+                        <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-3">${transaction.type}</h3>
+                        <div class="space-y-2 text-sm">
+                            <p class="text-gray-700 dark:text-dark-300"><strong>Total:</strong> ${transaction.totalTransactions.toLocaleString()}</p>
+                            <p class="text-green-600 dark:text-green-400"><strong>Success:</strong> ${((transaction.success.count / transaction.totalTransactions) * 100 || 0).toFixed(1)}%</p>
+                            <p class="text-red-600 dark:text-red-400"><strong>Failure:</strong> ${((transaction.failure.count / transaction.totalTransactions) * 100 || 0).toFixed(1)}%</p>
+                            <p class="text-red-600 dark:text-red-400"><strong>Error Streak:</strong> ${transaction.errorStreak}</p>
                         </div>
-                        <div class="mt-4 text-right">
-                             <button class="view-details-btn text-blue-600 hover:text-blue-700 text-sm font-medium" data-card-id="${transaction.id}">
-                                View Details
-                            </button>
+                        <div class="mt-3 text-right">
+                            <button class="view-details-btn text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-xs font-medium" data-card-id="${transaction.id}">View Details</button>
                         </div>
                     </div>
                 `).join('')}
@@ -930,130 +769,111 @@ export class TransactionMonitoringScreen {
 
         let contentHTML = '';
 
-        console.log('Rendering content for view:', this.currentView);
-
         switch (this.currentView) {
             case 'grid':
                 contentHTML = this.renderGridView();
                 break;
-
             case 'list':
                 contentHTML = this.renderListView();
                 break;
-
             case 'column':
                 contentHTML = this.renderColumnView();
                 break;
-
             default:
-                console.warn('Unknown view type:', this.currentView);
                 contentHTML = this.renderGridView();
         }
 
         contentContainer.innerHTML = contentHTML;
-        console.log('Content rendered successfully for view:', this.currentView);
-
         this.attachContentEventListeners();
     }
 
-   attachContentEventListeners() {
-    const detailButtons = document.querySelectorAll('.view-details-btn');
-    detailButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const cardId = e.currentTarget.dataset.cardId;
-            console.log('Opening details for:', cardId);
-            
-            // This will now open the full-screen details
-            this.showTransactionDetails(cardId);
+    attachContentEventListeners() {
+        const detailButtons = document.querySelectorAll('.view-details-btn');
+        detailButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const cardId = e.currentTarget.dataset.cardId;
+                this.showTransactionDetails(cardId);
+            });
         });
-    });
-}
-
-   showTransactionDetails(cardId) {
-    const transaction = this.transactionData.find(t => t.id === cardId);
-    if (!transaction) {
-        console.error('Transaction not found:', cardId);
-        return;
     }
 
-    // Get the transaction type (USSD, SMS, API)
-    const transactionType = transaction.type;
-    
-    // Use the new TransactionDetailsScreen
-    if (window.transactionDetailsScreen) {
-        // Hide current monitoring screen
-        this.hide();
+    showTransactionDetails(cardId) {
+        const transaction = this.transactionData.find(t => t.id === cardId);
+        if (!transaction) {
+            console.error('Transaction not found:', cardId);
+            return;
+        }
+
+        const transactionType = transaction.type;
         
-        // Show detailed screen
-        window.transactionDetailsScreen.show(transactionType);
-    } else {
-        // Fallback to modal if details screen not available
-        this.showTransactionDetailsModal(transaction);
+        if (window.transactionDetailsScreen) {
+            this.hide();
+            window.transactionDetailsScreen.show(transactionType);
+        } else {
+            this.showTransactionDetailsModal(transaction);
+        }
     }
-}
 
-// 3. ADD: Fallback modal method (keep your existing one as backup)
-showTransactionDetailsModal(transaction) {
-    if (window.navigationManager) {
-        const detailsContent = `
-            <div class="space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Transaction Type</label>
-                        <div class="text-lg font-semibold">${transaction.type}</div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Total Volume</label>
-                        <div class="text-lg font-semibold">${transaction.totalTransactions.toLocaleString()}</div>
+    showTransactionDetailsModal(transaction) {
+        if (window.navigationManager) {
+            const detailsContent = `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Transaction Type</label>
+                            <div class="text-lg font-semibold text-gray-900 dark:text-white">${transaction.type}</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Total Volume</label>
+                            <div class="text-lg font-semibold text-gray-900 dark:text-white">${transaction.totalTransactions.toLocaleString()}</div>
+                        </div>
                     </div>
                 </div>
-                <!-- Add more details as needed -->
-            </div>
-        `;
+            `;
 
-        window.navigationManager.showModal(
-            `Details for ${transaction.type}`,
-            detailsContent,
-            [
-                { label: 'Close', action: 'close', primary: true, handler: () => true }
-            ]
-        );
+            window.navigationManager.showModal(
+                `Details for ${transaction.type}`,
+                detailsContent,
+                [{ label: 'Close', action: 'close', primary: true, handler: () => true }]
+            );
+        }
     }
-}
-
 
     render() {
         return `
-            <div class="min-h-screen bg-gray-50">
+            <div class="min-h-screen bg-gray-50 dark:bg-dark-900 transition-colors duration-300">
                 <!-- Header -->
-                <div class="bg-white border-b border-gray-200">
+                <div class="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700 transition-colors duration-300">
                     <div class="px-6 py-4">
                         <div class="flex justify-between items-center">
                             <div>
-                                <h1 class="text-2xl font-bold text-gray-900">Transaction Monitoring Dashboard</h1>
-                                <p class="text-gray-600 mt-1">Your brief overview of your Transaction Monitoring</p>
+                                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Transaction Monitoring Dashboard</h1>
+                                <p class="text-gray-600 dark:text-dark-300 mt-1">Your brief overview of your Transaction Monitoring</p>
                             </div>
                             <div class="flex items-center gap-4">
-                                <div class="flex items-center gap-2 text-gray-600 cursor-pointer" title="View notifications">
+                                <!-- Dark Mode Toggle -->
+                                <button id="darkModeToggle" class="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors duration-200" title="Toggle Dark Mode">
+                                    <i class="fas fa-sun text-yellow-500 dark:block hidden w-5 h-5"></i>
+                                    <i class="fas fa-moon text-gray-600 dark:hidden block w-5 h-5"></i>
+                                </button>
+
+                                <!-- Notification Icon -->
+                                <div class="flex items-center gap-2 text-gray-600 dark:text-dark-300 cursor-pointer" title="View notifications">
                                     <i class="fas fa-bell"></i>
-                                    <span class="notification-badge bg-red-500 text-white text-xs rounded-full px-2 py-1"
-                                          style="display: ${this.notificationCount > 0 ? 'inline-block' : 'none'}">
-                                        ${this.notificationCount > 99 ? '99+' : this.notificationCount}
-                                    </span>
+                                    <span class="notification-badge bg-red-500 text-white text-xs rounded-full px-2 py-1" style="display: none;"></span>
                                 </div>
+
+                                <!-- User Profile -->
                                 <div class="flex items-center gap-3">
-                                    <div class="user-avatar w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
-                                        ${this.userData.avatar ?
-                                            `<img src="${this.userData.avatar}" alt="${this.userData.name}" class="w-8 h-8 rounded-full object-cover">` :
-                                            `<i class="fas fa-user text-white"></i>`
-                                        }
+                                    <div class="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-user text-white text-sm"></i>
                                     </div>
                                     <div>
-                                        <div class="user-name text-sm font-medium text-gray-900">${this.userData.name}</div>
-                                        <div class="user-role text-xs text-gray-500">${this.userData.role}</div>
+                                        <div class="user-name text-sm font-medium text-gray-900 dark:text-white">Joshua Awori</div>
+                                        <div class="user-role text-xs text-gray-500 dark:text-dark-400">Super Administrator</div>
                                     </div>
                                 </div>
                             </div>
@@ -1062,20 +882,20 @@ showTransactionDetailsModal(transaction) {
                 </div>
 
                 <!-- Toolbar -->
-                <div class="bg-white border-b border-gray-200 px-6 py-4">
+                <div class="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700 px-6 py-4 transition-colors duration-300">
                     <div class="flex justify-between items-center">
                         <div class="flex items-center gap-4">
                             <!-- View Toggle -->
-                            <div class="flex items-center bg-gray-100 rounded-lg p-1">
-                                <button data-view="grid" class="view-toggle-btn active flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            <div class="flex items-center bg-gray-100 dark:bg-dark-700 rounded-lg p-1">
+                                <button data-view="grid" class="view-toggle-btn active bg-white dark:bg-dark-600 text-gray-900 dark:text-white flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors shadow-sm">
                                     <i class="fas fa-th"></i>
                                     Grid View
                                 </button>
-                                <button data-view="list" class="view-toggle-btn flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                                <button data-view="list" class="view-toggle-btn flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-gray-600 dark:text-dark-300 hover:text-gray-900 dark:hover:text-white">
                                     <i class="fas fa-list"></i>
                                     List View
                                 </button>
-                                <button data-view="column" class="view-toggle-btn flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                                <button data-view="column" class="view-toggle-btn flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-gray-600 dark:text-dark-300 hover:text-gray-900 dark:hover:text-white">
                                     <i class="fas fa-columns"></i>
                                     Column View
                                 </button>
@@ -1083,21 +903,14 @@ showTransactionDetailsModal(transaction) {
                         </div>
 
                         <div class="flex items-center gap-4">
-                            <!-- Refresh button -->
-                            <button class="refresh-btn flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                                    title="Refresh Data">
-                                <i class="fas fa-sync-alt"></i>
-                                Refresh
-                            </button>
-
                             <!-- Date Range Picker -->
-                            <div class="date-range-picker flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-white cursor-pointer hover:bg-gray-50">
-                                <i class="fas fa-calendar text-gray-500"></i>
-                                <span class="date-range-display text-sm text-gray-700">${this.dateRange}</span>
+                            <div class="date-range-picker flex items-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-dark-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors">
+                                <i class="fas fa-calendar text-gray-500 dark:text-dark-400"></i>
+                                <span class="text-sm text-gray-700 dark:text-dark-300">July 25, 2026 - August 25, 2026</span>
                             </div>
 
                             <!-- Filter Button -->
-                            <button class="filter-btn flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors">
+                            <button class="filter-btn flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-dark-600 text-white rounded-md hover:bg-gray-800 dark:hover:bg-dark-500 transition-colors">
                                 <i class="fas fa-filter"></i>
                                 Filter
                             </button>
@@ -1107,17 +920,17 @@ showTransactionDetailsModal(transaction) {
 
                 <!-- Critical Alert -->
                 <div class="critical-alert mx-6 mt-4" style="display: ${this.showAlert ? 'block' : 'none'}">
-                    <div class="bg-red-100 border border-red-200 rounded-lg px-4 py-3 flex items-center justify-between">
+                    <div class="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3 flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <i class="fas fa-exclamation-triangle text-red-600"></i>
+                            <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400"></i>
                             <div>
-                                <span class="font-semibold text-red-800">Critical Alerts:</span>
-                                <span class="alert-message text-red-700 ml-2">${this.alertMessage || 'Critical: Channel 5 failure rate is 40%*'}</span>
+                                <span class="font-semibold text-red-800 dark:text-red-300">Critical Alerts:</span>
+                                <span class="alert-message text-red-700 dark:text-red-300 ml-2">Critical: Channel 5 failure rate is 40%</span>
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
-                            <span class="text-red-700 font-medium">Failure Alert</span>
-                            <button class="alert-dismiss-btn text-red-600 hover:text-red-800">
+                            <span class="text-red-700 dark:text-red-300 font-medium">Failure Alert</span>
+                            <button class="alert-dismiss-btn text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200 transition-colors">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
@@ -1142,56 +955,28 @@ showTransactionDetailsModal(transaction) {
 
             setTimeout(() => {
                 this.setupEventListeners();
-                this.showLoadingState();
 
-                const gridBtn = document.querySelector('[data-view="grid"]');
-                if (gridBtn) {
-                    gridBtn.classList.add('active', 'bg-white', 'text-gray-900', 'shadow-sm');
-                    gridBtn.classList.remove('text-gray-600');
-                }
-
-                console.log('Transaction monitoring screen initialized - loading data...');
-            }, 100);
-
-            // Load mock data after brief delay
-            setTimeout(async () => {
-                console.log('Loading mock data after brief delay...');
-
-                // Load mock user data
-                this.userData = {
-                    name: 'Nathan Claire',
-                    role: 'Super Administrator',
-                    avatar: null
-                };
-                this.updateUserHeader();
-
-                // Load mock notification count
-                this.notificationCount = 88;
-                this.updateNotificationBadge();
-
-                // Load mock alerts
-                this.showAlert = true;
-                this.alertMessage = 'Critical: Channel 5 failure rate is 40%';
-                this.updateAlertDisplay();
-
-                // Load mock transaction data
+                // Load mock data immediately
+                this.loadUserData();
+                this.loadNotifications();
+                this.loadAlerts();
                 this.transactionData = this.getMockData();
-                this.isLoading = false;
-                this.error = null;
-
-                this.cacheTransactionData();
                 this.renderContent();
 
-                console.log('Mock data loaded successfully');
-
-                if (window.navigationManager) {
-                    window.navigationManager.showNotification('Mock data loaded for demo', 'info');
+                // Set up dark mode toggle
+                const darkModeToggleBtn = document.querySelector('#darkModeToggle');
+                if (darkModeToggleBtn) {
+                    darkModeToggleBtn.addEventListener('click', () => {
+                        if (this.darkModeManager) {
+                            this.darkModeManager.toggleDarkMode();
+                        }
+                    });
                 }
 
-            }, 500);
+                console.log('Transaction monitoring screen loaded with channels:', this.channelNames);
+            }, 100);
         }
     }
-    
 
     hide() {
         const screen = document.getElementById('transactionScreen');
@@ -1201,6 +986,10 @@ showTransactionDetailsModal(transaction) {
     }
 
     cleanup() {
+        if (this.darkModeCleanup) {
+            this.darkModeCleanup();
+            this.darkModeCleanup = null;
+        }
         this.isInitialized = false;
     }
 
@@ -1230,6 +1019,7 @@ showTransactionDetailsModal(transaction) {
             console.log('Auto-refresh stopped');
         }
     }
+
 
     // Export transaction data
     exportTransactionData(format = 'csv') {
@@ -1266,6 +1056,7 @@ showTransactionDetailsModal(transaction) {
                     exportDate: new Date().toISOString(),
                     dateRange: this.dateRange,
                     totalRecords: this.transactionData.length,
+                    channels: this.channelNames,
                     data: this.transactionData
                 }, null, 2);
                 filename = `transaction_data_${timestamp}.json`;

@@ -32,12 +32,19 @@ export class DashboardApp {
     }
 
     async loadScreenModules() {
+
+          if (!window.darkModeManager) {
+            try {
+                const { DarkModeManager } = await import('../utils/DarkModeManager.js');
+                window.darkModeManager = new DarkModeManager();
+                console.log('DarkModeManager initialized globally');
+            } catch (error) {
+                console.error('Failed to load DarkModeManager:', error);
+            }
+        }
        
         try {
-            if (window.darkModeManager) {
-            const { DarkModeManager } = await import('../utils/DarkModeManager.js');
-            window.darkModeManager = new DarkModeManager();
-            }
+            
 
             
             const { DashboardHomeScreen } = await import('../screens/DashboardHomeScreen.js');
